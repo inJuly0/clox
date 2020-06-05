@@ -42,7 +42,7 @@ void vmTest() {
 }
 
 void compilerTest(){
-    compile("()");
+    compile("\"hello !\" \n + 2\0");
 }
 
 static void repl() {
@@ -93,7 +93,7 @@ static void runLox(int argc, char const* argv[]){
 
 int main(int argc, char const* argv[]) {
     // runLox(argc, argv);
-    vmTest();
+    compilerTest();
     return 0;
 }
 
