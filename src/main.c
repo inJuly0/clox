@@ -42,7 +42,7 @@ void vmTest() {
 }
 
 void compilerTest(){
-    compile("\"hello !\" \n + 2\0");
+    compile("var anum = 2 or false\0");
 }
 
 static void repl() {
