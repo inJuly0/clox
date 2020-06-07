@@ -35,14 +35,14 @@ void vmTest() {
     writeChunk(&chnk, constIndex2, 1);
     writeChunk(&chnk, OP_MULT, 1);
     writeChunk(&chnk, OP_RETURN, 1);
-    interpret(&chnk);
+    // interpret(&chnk);
     freeChunk(&chnk);
     freeVM();
     printf("\n</VM tests>\n");
 }
 
 void compilerTest(){
-    compile("var anum = 2 or false\0");
+    // compile("var anum = -1 * 2 or false\0");
 }
 
 static void repl() {

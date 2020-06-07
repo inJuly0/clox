@@ -45,6 +45,9 @@ Token errorToken(const char* errorMessage) {
     return token;
 }
 
+// These function names will be re-used in the parser for tokens 
+// static scoping keeps their usage limited to this file only.
+
 static char advance() {
     scanner.current++;
     return scanner.current[-1];

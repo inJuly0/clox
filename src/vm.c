@@ -5,6 +5,7 @@
 #include "common.h"
 #include "debug.h"
 #include "value.h"
+#include "compiler.h"
 
 VM vm;
 
@@ -66,8 +67,32 @@ static InterpretResult run() {
 #undef BINARY_OP
 }
 
-InterpretResult interpret(Chunk* chunk) {
-    vm.chunk = chunk;
-    vm.ip = chunk->code;
-    return run();
+InterpretResult interpret(const char* source) {
+
+    Chunk chunk;
+    initChunk(&chunk);
+
+    // the compiler puts all the bytecode 
+    // into the chunk's opcode array
+
+    if(!compile(source, &chunk)){
+        // throw error and return
+        freeChunk(&chunk);
+        return INTERPRET_COMPILE_ERROR;
+    }
+
+    // if there are no compile errors
+    // then pass the chunk over to 
+    // the VM to interpret and run the 
+    // bytecode
+
+    vm.chunk = &chunk;
+    vm.ip = chunk.code;
+    
+    // we can't just do return run() because 
+    // we have to free the chunk before exiting the function
+
+    InterpretResult result = run();
+    freeChunk(&chunk);
+    return result;
 }

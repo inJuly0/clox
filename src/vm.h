@@ -25,6 +25,6 @@ typedef enum {
 
 void initVM();
 void freeVM();
-InterpretResult interpret(Chunk* source);
+InterpretResult interpret(const char* source);
 
 #endif
