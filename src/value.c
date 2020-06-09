@@ -1,9 +1,9 @@
 #include "value.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "memory.h"
-#include <stdlib.h>
 
 // Value array is used to hold the values / constants
 // It is the constant pool in the chunk.
@@ -37,7 +37,19 @@ ValueArray* newValueArray() {
     return temp;
 }
 
-void printValue(Value value) { printf("%g", value); }
+void printValue(Value value) {
+    switch (value.type) {
+        case VAL_BOOL:
+            printf(AS_BOOL(value) ? "true" : "false");
+            break;
+        case VAL_NIL:
+            printf("nil");
+            break;
+        case VAL_NUMBER:
+            printf("%g", AS_NUMBER(value));
+            break;
+    }
+}
 
 void pushValue(ValueStack* stack, Value value) {
     if ((stack->top - stack->values) > stack->size) {
@@ -58,16 +70,16 @@ void initValueStack(ValueStack* stack, size_t size) {
     stack->top = stack->values;
 }
 
-void freeValueStack(ValueStack* stack){
+void freeValueStack(ValueStack* stack) {
     stack->values = NULL;
     stack->top = NULL;
     stack->size = 0;
     free(stack);
 }
 
-void printValueStack(ValueStack* stack){
+void printValueStack(ValueStack* stack) {
     printf("           ");
-    for(Value* slot = stack->values; slot < stack->top; slot++){
+    for (Value* slot = stack->values; slot < stack->top; slot++) {
         printf("[");
         printValue(*slot);
         printf("]");

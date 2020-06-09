@@ -12,7 +12,7 @@ void chunkTest() {
     Chunk chnk;
     initChunk(&chnk);
     writeChunk(&chnk, OP_RETURN, 1);
-    int constIndex = addConstant(&chnk, 12.3);
+    int constIndex = addConstant(&chnk, NUMBER_VAL(12.3));
     writeChunk(&chnk, OP_CONSTANT, 1);
     writeChunk(&chnk, constIndex, 1);
     writeChunk(&chnk, OP_NEGATE, 1);
@@ -24,19 +24,7 @@ void chunkTest() {
 void vmTest() {
     printf("\n<VM tests>\n");
     initVM();
-    Chunk chnk;
-    initChunk(&chnk);
-    int constIndex = addConstant(&chnk, 5);
-    writeChunk(&chnk, OP_CONSTANT, 1);
-    writeChunk(&chnk, constIndex, 1);
-    writeChunk(&chnk, OP_NEGATE, 1);
-    int constIndex2 = addConstant(&chnk, 7);
-    writeChunk(&chnk, OP_CONSTANT, 1);
-    writeChunk(&chnk, constIndex2, 1);
-    writeChunk(&chnk, OP_MULT, 1);
-    writeChunk(&chnk, OP_RETURN, 1);
-    // interpret(&chnk);
-    freeChunk(&chnk);
+    interpret("true + 1");
     freeVM();
     printf("\n</VM tests>\n");
 }
@@ -54,22 +42,27 @@ static void repl() {
 
 static char* readFile(const char* filePath) {
     FILE* file = fopen(filePath, "r");
+    
     if (!file) {
         fprintf(stderr, "Could not open file \'%s\'\n", filePath);
         exit(EXIT_FAILURE);
     }
+    
     fseek(file, 0, SEEK_END);
     size_t fileSize = ftell(file);
     rewind(file);
     char* buffer = (char*)malloc(fileSize + 1);
     size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
+    
     if(buffer == NULL){
         fprintf(stderr, "Not enough memory to read \'%s\'", filePath);
         exit(EXIT_FAILURE);
     }
+    
     if(bytesRead < fileSize) {
         fprintf(stderr, "Couldn't read file \'%s\'.\n");
     }
+    
     buffer[bytesRead] = '\0';
     return buffer;
 }
@@ -79,21 +72,20 @@ static void runFile(const char* filePath) {}
 static void runLox(int argc, char const* argv[]){
     initVM();
     printf("cLox | Crafting Interpreters (Bob Nystrom).\n");
+    
     if (argc == 1) {
         repl();
     } else if (argc == 2) {
         runFile(argv[1]);
     } else {
-        char* s = readFile("vm.c");
         fprintf(stderr, "Usage: clox [path].\n");
-        printf("%s", s);
     }
     freeVM();
 }
 
 int main(int argc, char const* argv[]) {
     // runLox(argc, argv);
-    compilerTest();
+    vmTest();
     return 0;
 }
 
