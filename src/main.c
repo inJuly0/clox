@@ -24,7 +24,7 @@ void chunkTest() {
 void vmTest() {
     printf("\n<VM tests>\n");
     initVM();
-    interpret("true + 1");
+    interpret("1");
     freeVM();
     printf("\n</VM tests>\n");
 }

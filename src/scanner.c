@@ -112,14 +112,17 @@ static Token string() {
 }
 
 static Token number() {
-    while (!isAtEnd() && isDigit(peek())) advance();
-    if (peek() == '.' && isDigit(peekNext())) {
-        advance();
-        while (isDigit(peek())) advance();
-    }
-    return makeToken(TOKEN_NUMBER);
-}
+  while (isDigit(peek())) advance();
 
+  // Look for a fractional part.
+  if (peek() == '.' && isDigit(peekNext())) {
+    // Consume the ".".
+    advance();
+
+    while (isDigit(peek())) advance();
+  }
+   return makeToken(TOKEN_NUMBER);
+}
 // start: offset from scanner.start
 // length: how many characters to compare / length of 'rest'
 // rest: the rest of the keyword to check with
@@ -174,8 +177,12 @@ Token identifier() {
 Token scanToken() {
     skipWhiteSpace();
     scanner.start = scanner.current;
-
+    if (isAtEnd()) return makeToken(TOKEN_EOF);
+    
     char c = advance();
+
+    if (isDigit(c)) return number();
+    if (isAlpha(c)) return identifier();
 
     switch (c) {
         case '(':
@@ -209,15 +216,10 @@ Token scanToken() {
         case '>':
             return makeToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
         case '"':
-            return string();
-        default:
-            if (isDigit(c))
-                return number();
-            else if (isAlpha(c))
-                return identifier();
+            return string();            
     }
 
-    if (isAtEnd()) return makeToken(TOKEN_EOF);
+    
     return errorToken("Unexpected character");
 }
 
