@@ -32,17 +32,16 @@ typedef struct{
 #define IS_NUMBER(value) ((value).type == VAL_NUMBER)
 
 
+bool valuesEqual(Value a, Value b);
+
+// value array
+
 typedef struct {
     int capacity;
     int count;
     Value* values;
 } ValueArray;
 
-typedef struct {
-    Value* top;
-    size_t size;
-    Value* values;
-}ValueStack;
 
 void initValueArray(ValueArray* array);
 ValueArray* newValueArray();
@@ -51,6 +50,13 @@ void writeValueArray(ValueArray* array, Value value);
 void freeValueArray(ValueArray* array);
 
 // stack
+
+typedef struct {
+    Value* top;
+    size_t size;
+    Value* values;
+}ValueStack;
+
 
 void initValueStack(ValueStack* stack, size_t size);
 void freeValueStack(ValueStack* stack);

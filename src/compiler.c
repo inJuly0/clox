@@ -146,46 +146,46 @@ static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
 ParseRule rules[] = {
-    {grouping, NULL, PREC_NONE},    // TOKEN_LEFT_PAREN
-    {NULL, NULL, PREC_NONE},        // TOKEN_RIGHT_PAREN
-    {NULL, NULL, PREC_NONE},        // TOKEN_LEFT_BRACE
-    {NULL, NULL, PREC_NONE},        // TOKEN_RIGHT_BRACE
-    {NULL, NULL, PREC_NONE},        // TOKEN_COMMA
-    {NULL, NULL, PREC_NONE},        // TOKEN_DOT
-    {unary, binary, PREC_TERM},     // TOKEN_MINUS
-    {NULL, binary, PREC_TERM},      // TOKEN_PLUS
-    {NULL, NULL, PREC_NONE},        // TOKEN_SEMICOLON
-    {NULL, binary, PREC_FACTOR},    // TOKEN_SLASH
-    {NULL, binary, PREC_FACTOR},    // TOKEN_STAR
-    {NULL, NULL, PREC_NONE},        // TOKEN_BANG
-    {NULL, NULL, PREC_NONE},        // TOKEN_BANG_EQUAL
-    {NULL, NULL, PREC_NONE},        // TOKEN_EQUAL
-    {NULL, NULL, PREC_NONE},        // TOKEN_EQUAL_EQUAL
-    {NULL, NULL, PREC_NONE},        // TOKEN_GREATER
-    {NULL, NULL, PREC_NONE},        // TOKEN_GREATER_EQUAL
-    {NULL, NULL, PREC_COMPARISON},  // TOKEN_LESS
-    {NULL, NULL, PREC_NONE},        // TOKEN_LESS_EQUAL
-    {NULL, NULL, PREC_NONE},        // TOKEN_IDENTIFIER
-    {NULL, NULL, PREC_NONE},        // TOKEN_STRING
-    {number, NULL, PREC_NONE},      // TOKEN_NUMBER
-    {NULL, NULL, PREC_NONE},        // TOKEN_AND
-    {NULL, NULL, PREC_NONE},        // TOKEN_CLASS
-    {NULL, NULL, PREC_NONE},        // TOKEN_ELSE
-    {literal, NULL, PREC_NONE},     // TOKEN_FALSE
-    {NULL, NULL, PREC_NONE},        // TOKEN_FOR
-    {NULL, NULL, PREC_NONE},        // TOKEN_FUN
-    {NULL, NULL, PREC_NONE},        // TOKEN_IF
-    {literal, NULL, PREC_NONE},     // TOKEN_NIL
-    {NULL, NULL, PREC_NONE},        // TOKEN_OR
-    {NULL, NULL, PREC_NONE},        // TOKEN_PRINT
-    {NULL, NULL, PREC_NONE},        // TOKEN_RETURN
-    {NULL, NULL, PREC_NONE},        // TOKEN_SUPER
-    {NULL, NULL, PREC_NONE},        // TOKEN_THIS
-    {literal, NULL, PREC_NONE},     // TOKEN_TRUE
-    {NULL, NULL, PREC_NONE},        // TOKEN_VAR
-    {NULL, NULL, PREC_NONE},        // TOKEN_WHILE
-    {NULL, NULL, PREC_NONE},        // TOKEN_ERROR
-    {NULL, NULL, PREC_NONE},        // TOKEN_EOF
+    {grouping, NULL, PREC_NONE},      // TOKEN_LEFT_PAREN
+    {NULL, NULL, PREC_NONE},          // TOKEN_RIGHT_PAREN
+    {NULL, NULL, PREC_NONE},          // TOKEN_LEFT_BRACE
+    {NULL, NULL, PREC_NONE},          // TOKEN_RIGHT_BRACE
+    {NULL, NULL, PREC_NONE},          // TOKEN_COMMA
+    {NULL, NULL, PREC_NONE},          // TOKEN_DOT
+    {unary, binary, PREC_TERM},       // TOKEN_MINUS
+    {NULL, binary, PREC_TERM},        // TOKEN_PLUS
+    {NULL, NULL, PREC_NONE},          // TOKEN_SEMICOLON
+    {NULL, binary, PREC_FACTOR},      // TOKEN_SLASH
+    {NULL, binary, PREC_FACTOR},      // TOKEN_STAR
+    {unary, NULL, PREC_UNARY},          // TOKEN_BANG
+    {NULL, binary, PREC_COMPARISON},  // TOKEN_BANG_EQUAL
+    {NULL, NULL, PREC_NONE},          // TOKEN_EQUAL
+    {NULL, binary, PREC_EQUALITY},    // TOKEN_EQUAL_EQUAL
+    {NULL, binary, PREC_COMPARISON},  // TOKEN_GREATER
+    {NULL, binary, PREC_COMPARISON},  // TOKEN_GREATER_EQUAL
+    {NULL, binary, PREC_COMPARISON},  // TOKEN_LESS
+    {NULL, binary, PREC_COMPARISON},  // TOKEN_LESS_EQUAL
+    {NULL, NULL, PREC_NONE},          // TOKEN_IDENTIFIER
+    {NULL, NULL, PREC_NONE},          // TOKEN_STRING
+    {number, NULL, PREC_NONE},        // TOKEN_NUMBER
+    {NULL, NULL, PREC_NONE},          // TOKEN_AND
+    {NULL, NULL, PREC_NONE},          // TOKEN_CLASS
+    {NULL, NULL, PREC_NONE},          // TOKEN_ELSE
+    {literal, NULL, PREC_NONE},       // TOKEN_FALSE
+    {NULL, NULL, PREC_NONE},          // TOKEN_FOR
+    {NULL, NULL, PREC_NONE},          // TOKEN_FUN
+    {NULL, NULL, PREC_NONE},          // TOKEN_IF
+    {literal, NULL, PREC_NONE},       // TOKEN_NIL
+    {NULL, NULL, PREC_NONE},          // TOKEN_OR
+    {NULL, NULL, PREC_NONE},          // TOKEN_PRINT
+    {NULL, NULL, PREC_NONE},          // TOKEN_RETURN
+    {NULL, NULL, PREC_NONE},          // TOKEN_SUPER
+    {NULL, NULL, PREC_NONE},          // TOKEN_THIS
+    {literal, NULL, PREC_NONE},       // TOKEN_TRUE
+    {NULL, NULL, PREC_NONE},          // TOKEN_VAR
+    {NULL, NULL, PREC_NONE},          // TOKEN_WHILE
+    {NULL, NULL, PREC_NONE},          // TOKEN_ERROR
+    {NULL, NULL, PREC_NONE},          // TOKEN_EOF
 };
 
 static ParseRule* getRule(TokenType type) {
@@ -196,8 +196,7 @@ static ParseRule* getRule(TokenType type) {
 
 static void parsePrecedence(Precedence precedence) {
     advance();
-    printf("%s %d\n", tokenToString(parser.previous.type),
-           parser.previous.type);
+    printf("%s\n", tokenToString(parser.current.type));
     ParseFn prefixRule = getRule(parser.previous.type)->prefix;
 
     if (prefixRule == NULL) {
@@ -208,7 +207,6 @@ static void parsePrecedence(Precedence precedence) {
     prefixRule();
 
     while (precedence <= getRule(parser.current.type)->precedence) {
-        printf("%s\n", tokenToString(parser.current.type));
         advance();
         ParseFn infixRule = getRule(parser.previous.type)->infix;
         infixRule();
@@ -231,6 +229,9 @@ static void literal() {
         case TOKEN_NIL:
             emitByte(OP_NIL);
             break;
+        case TOKEN_EQUAL_EQUAL:
+            emitByte(OP_EQUAL);
+            break;
         default:
             return;  // Unreachable
     }
@@ -252,6 +253,24 @@ static void binary() {
 
     //  Emit the operator instruction
     switch (operator) {
+        case TOKEN_BANG_EQUAL:
+            emitBytes(OP_EQUAL, OP_NOT);
+            break;
+        case TOKEN_EQUAL_EQUAL:
+            emitByte(OP_EQUAL);
+            break;
+        case TOKEN_GREATER:
+            emitByte(OP_GREATER);
+            break;
+        case TOKEN_GREATER_EQUAL:
+            emitBytes(OP_LESS, OP_NOT);
+            break;
+        case TOKEN_LESS:
+            emitByte(OP_LESS);
+            break;
+        case TOKEN_LESS_EQUAL:
+            emitBytes(OP_GREATER, OP_NOT);
+            break;
         case TOKEN_PLUS:
             emitByte(OP_ADD);
             break;
@@ -278,6 +297,9 @@ static void unary() {
         case TOKEN_MINUS:
             emitByte(OP_NEGATE);
             break;
+        case TOKEN_BANG:
+            emitByte(OP_NOT);
+            break;
         default:
             return;  // Unreachable
     }
@@ -303,7 +325,6 @@ bool compile(const char* source, Chunk* chunk) {
 
     // in clox, there is no buffer of tokens, so we just use
     // parser.current instead of peek() to lookahead
-    printf("%d\n", rules[TOKEN_LESS].precedence);
     expression();
     consume(TOKEN_EOF, "Expected end of expression.");
     endCompiler();
@@ -321,7 +342,8 @@ void printTokens(const char* source) {
         } else {
             printf("   | ");
         }
-        printf("%s '%.*s'\n", tokenToString(token.type), token.length, token.start);
+        printf("%s '%.*s'\n", tokenToString(token.type), token.length,
+               token.start);
 
         if (token.type == TOKEN_EOF) break;
     }

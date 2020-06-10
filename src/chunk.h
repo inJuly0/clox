@@ -26,6 +26,7 @@ typedef enum {
     OP_RETURN,
     OP_CONSTANT,
     OP_NIL,
+    OP_NOT,
     OP_TRUE,
     OP_FALSE,
     OP_EQUAL,

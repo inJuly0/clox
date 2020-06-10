@@ -36,6 +36,10 @@ void initVM() { initValueStack(&vm.stack, STACK_SIZE); }
 
 void freeVM() { freeValueStack(&vm.stack); }
 
+static bool isFalsey(Value value) {
+    return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
 static InterpretResult run() {
 #define BINARY_OP(valueType, op)                          \
     do {                                                  \
@@ -46,8 +50,7 @@ static InterpretResult run() {
         double b = AS_NUMBER(pop());                      \
         double a = AS_NUMBER(pop());                      \
         push(valueType(a op b));                          \
-    }                                                     \
-    while (false)
+    } while (false)
 #define READ_BYTE() (*(vm.ip++))
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
     while (true) {
@@ -56,6 +59,7 @@ static InterpretResult run() {
         disassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
 #endif
         uint8_t instruction = READ_BYTE();
+        Value valA, valB;
         switch (instruction) {
             case OP_RETURN:
                 printValue(pop());
@@ -88,11 +92,25 @@ static InterpretResult run() {
             case OP_NIL:
                 push(NIL_VAL);
                 break;
-            case OP_TRUE: 
+            case OP_TRUE:
                 push(BOOL_VAL(true));
                 break;
             case OP_FALSE:
                 push(BOOL_VAL(false));
+                break;
+            case OP_GREATER:
+                BINARY_OP(BOOL_VAL, >);
+                break;
+            case OP_LESS:
+                BINARY_OP(BOOL_VAL, <);
+                break;
+            case OP_EQUAL:
+                valA = pop();
+                valB = pop();
+                push(BOOL_VAL(valuesEqual(valA, valB)));
+                break;
+            case OP_NOT:
+                push(BOOL_VAL(isFalsey(pop())));
                 break;
         }
     }
