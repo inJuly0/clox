@@ -24,7 +24,7 @@ void chunkTest() {
 void vmTest() {
     printf("\n<VM tests>\n");
     initVM();
-    interpret("!nil");
+    interpret("\"str\" + \"ing\"");
     freeVM();
     printf("\n</VM tests>\n");
 }
@@ -88,6 +88,3 @@ int main(int argc, char const* argv[]) {
     vmTest();
     return 0;
 }
-
-
-// compile using : gcc memory.c value.c chunk.c debug.c scanner.c compiler.c vm.c main.c

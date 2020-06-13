@@ -15,7 +15,11 @@ typedef struct {
     Chunk* chunk;
     uint8_t* ip;
     ValueStack stack;
+    Obj* objects;
 } VM;
+
+
+extern VM vm;
 
 typedef enum {
     INTERPRET_OK,

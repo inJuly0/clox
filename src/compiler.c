@@ -4,7 +4,9 @@
 #include <stdlib.h>
 
 #include "common.h"
+#include "object.h"
 #include "scanner.h"
+#include "value.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
@@ -140,6 +142,7 @@ static void binary();
 static void unary();
 static void literal();
 static void number();
+static void string();
 static void expression();
 static void grouping();
 static ParseRule* getRule(TokenType type);
@@ -157,7 +160,7 @@ ParseRule rules[] = {
     {NULL, NULL, PREC_NONE},          // TOKEN_SEMICOLON
     {NULL, binary, PREC_FACTOR},      // TOKEN_SLASH
     {NULL, binary, PREC_FACTOR},      // TOKEN_STAR
-    {unary, NULL, PREC_UNARY},          // TOKEN_BANG
+    {unary, NULL, PREC_UNARY},        // TOKEN_BANG
     {NULL, binary, PREC_COMPARISON},  // TOKEN_BANG_EQUAL
     {NULL, NULL, PREC_NONE},          // TOKEN_EQUAL
     {NULL, binary, PREC_EQUALITY},    // TOKEN_EQUAL_EQUAL
@@ -166,7 +169,7 @@ ParseRule rules[] = {
     {NULL, binary, PREC_COMPARISON},  // TOKEN_LESS
     {NULL, binary, PREC_COMPARISON},  // TOKEN_LESS_EQUAL
     {NULL, NULL, PREC_NONE},          // TOKEN_IDENTIFIER
-    {NULL, NULL, PREC_NONE},          // TOKEN_STRING
+    {string, NULL, PREC_NONE},        // TOKEN_STRING
     {number, NULL, PREC_NONE},        // TOKEN_NUMBER
     {NULL, NULL, PREC_NONE},          // TOKEN_AND
     {NULL, NULL, PREC_NONE},          // TOKEN_CLASS
@@ -196,7 +199,6 @@ static ParseRule* getRule(TokenType type) {
 
 static void parsePrecedence(Precedence precedence) {
     advance();
-    printf("%s\n", tokenToString(parser.current.type));
     ParseFn prefixRule = getRule(parser.previous.type)->prefix;
 
     if (prefixRule == NULL) {
@@ -211,6 +213,11 @@ static void parsePrecedence(Precedence precedence) {
         ParseFn infixRule = getRule(parser.previous.type)->infix;
         infixRule();
     }
+}
+
+static void string() {
+    emitConstant(OBJ_VAL(
+        copyString(parser.previous.start + 1, parser.previous.length - 2)));
 }
 
 static void number() {

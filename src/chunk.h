@@ -49,7 +49,6 @@ typedef struct {
 
 void initChunk(Chunk* chunk);
 void freeChunk(Chunk* chunk);
-// code: Opcode, line: line
 void writeChunk(Chunk* chunk, uint8_t code, int line);
 int addConstant(Chunk* chunk, Value constant);
 Chunk* newChunk();
