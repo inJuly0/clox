@@ -2,6 +2,7 @@
 #define clox_memory_h
 #include "common.h"
 
+
 #define ALLOCATE(type, count) (type*)reallocate(NULL, 0, (count) * sizeof(type))
 
 #define ALLOCATE_OBJ(type, objectType) \
@@ -14,7 +15,6 @@
 void* reallocate(void* pointer, size_t oldCapacity, size_t newCapacity);
 void freeObjects();
 
-// clever macro
 // moves a bunch of bytes from one position in memory to
 // a larger position in memory with more empty space
 

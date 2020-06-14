@@ -24,10 +24,14 @@ struct sObj {
 struct sObjString {
     Obj obj;
     int length;
-    char* chars;
+    // using flexible array members to store the string in-place in the struct
+    char chars[];
 };
 
-ObjString* takeString(char* chars, int length);
+// ObjString* takeString(char* chars, int length);
+/* takes two character buffers and returns a string object
+ whose characters are the concactenated buffers*/
+ObjString* sumString(char* a, char* b, int lenA, int lenB);
 ObjString* copyString(const char* chars, int length);
 void printObject(Value object);
 

@@ -3,9 +3,9 @@
 #include <string.h>
 
 #include "chunk.h"
+#include "compiler.h"
 #include "debug.h"
 #include "vm.h"
-#include "compiler.h"
 
 void chunkTest() {
     printf("\n<Chunk tests>\n");
@@ -24,12 +24,13 @@ void chunkTest() {
 void vmTest() {
     printf("\n<VM tests>\n");
     initVM();
-    interpret("\"str\" + \"ing\"");
+    interpret("\"str\" == \"str\"");
+    //
     freeVM();
     printf("\n</VM tests>\n");
 }
 
-void compilerTest(){
+void compilerTest() {
     // compile("var anum = -1 * 2 or false\0");
 }
 
@@ -42,37 +43,37 @@ static void repl() {
 
 static char* readFile(const char* filePath) {
     FILE* file = fopen(filePath, "r");
-    
+
     if (!file) {
         fprintf(stderr, "Could not open file \'%s\'\n", filePath);
         exit(EXIT_FAILURE);
     }
-    
+
     fseek(file, 0, SEEK_END);
     size_t fileSize = ftell(file);
     rewind(file);
     char* buffer = (char*)malloc(fileSize + 1);
     size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
-    
-    if(buffer == NULL){
+
+    if (buffer == NULL) {
         fprintf(stderr, "Not enough memory to read \'%s\'", filePath);
         exit(EXIT_FAILURE);
     }
-    
-    if(bytesRead < fileSize) {
+
+    if (bytesRead < fileSize) {
         fprintf(stderr, "Couldn't read file \'%s\'.\n");
     }
-    
+
     buffer[bytesRead] = '\0';
     return buffer;
 }
 
 static void runFile(const char* filePath) {}
 
-static void runLox(int argc, char const* argv[]){
+static void runLox(int argc, char const* argv[]) {
     initVM();
     printf("cLox | Crafting Interpreters (Bob Nystrom).\n");
-    
+
     if (argc == 1) {
         repl();
     } else if (argc == 2) {

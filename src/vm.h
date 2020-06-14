@@ -18,14 +18,14 @@ typedef struct {
     Obj* objects;
 } VM;
 
-
-extern VM vm;
-
 typedef enum {
     INTERPRET_OK,
     INTERPRET_RUNTIME_ERROR,
     INTERPRET_COMPILE_ERROR
 } InterpretResult;
+
+
+VM vm;
 
 void initVM();
 void freeVM();

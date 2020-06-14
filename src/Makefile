@@ -1,8 +1,9 @@
 CC = gcc
+CFLAGS = 
 BUILD_DIR = ../bin/clox.exe
 
 all:
-	$(CC) memory.c value.c object.c chunk.c debug.c scanner.c compiler.c vm.c main.c -o $(BUILD_DIR).
+	$(CC) $(CFLAGS) memory.c value.c object.c chunk.c debug.c scanner.c compiler.c vm.c main.c -o $(BUILD_DIR).
 
 exec:
 	./bin/clox
