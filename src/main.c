@@ -24,7 +24,7 @@ void chunkTest() {
 void vmTest() {
     printf("\n<VM tests>\n");
     initVM();
-    interpret("\"str\" == \"str\"");
+    interpret("\"str\" + \"ing\" + \" in lox !\"");
     //
     freeVM();
     printf("\n</VM tests>\n");

@@ -7,7 +7,6 @@
 #include "value.h"
 #include "vm.h"
 
-
 static Obj* allocateObject(size_t size, ObjType type) {
     Obj* object = (Obj*)reallocate(NULL, 0, size);
     object->type = type;
@@ -16,23 +15,18 @@ static Obj* allocateObject(size_t size, ObjType type) {
     return object;
 }
 
-// static ObjString* allocateString(char* chars, int length) {
-//     ObjString* string = (ObjString*)allocateObject(
-//         sizeof(ObjString) + length * sizeof(char), OBJ_STRING);
-//     string->length = length;
-//     string->chars = chars;
-//     return string;
-// }
 
-ObjString* takeString(char* chars, int length) {
-    // return allocateString(chars, length);
-    return NULL;
+static ObjString* allocateString(int length) {
+    // size of an ObjString + number of characters + one extra
+    // for null terminator
+    int size = sizeof(ObjString) + sizeof(char) * (length + 1);
+    return (ObjString*)allocateObject(size, OBJ_STRING);
 }
+
 
 ObjString* sumString(char* a, char* b, int lenA, int lenB) {
     int length = lenA + lenB;
-    size_t size = sizeof(ObjString) + sizeof(char) * (length + 1);
-    ObjString* sumstr = (ObjString*)allocateObject(size, OBJ_STRING);
+    ObjString* sumstr = allocateString(length);
 
     int i = 0;
 
@@ -44,15 +38,13 @@ ObjString* sumString(char* a, char* b, int lenA, int lenB) {
         sumstr->chars[i] = b[i - lenA];
     }
     sumstr->chars[i] = '\0';
+    sumstr->length = length;
     return sumstr;
 }
 
 ObjString* copyString(const char* chars, int length) {
-    // the characters of the string exist in place as a flexible
-    // array member
-    size_t size = sizeof(ObjString) + ((length + 1) * sizeof(char));
-    ObjString* string = (ObjString*)allocateObject(size, OBJ_STRING);
 
+    ObjString* string = allocateString(length);
     string->length = length;
 
     for (int i = 0; i < length; i++) {
@@ -60,7 +52,6 @@ ObjString* copyString(const char* chars, int length) {
     }
 
     string->chars[length] = '\0';
-
     return string;
 }
 
