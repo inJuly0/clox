@@ -24,10 +24,22 @@ static ObjString* allocateString(int length) {
 }
 
 
+static uint32_t hashString(char* key, int length) {
+  uint32_t hash = 2166136261u;
+
+  for (int i = 0; i < length; i++) {
+    hash ^= key[i];
+    hash *= 16777619;
+  }
+
+  return hash;
+}
+
+
 ObjString* sumString(char* a, char* b, int lenA, int lenB) {
     int length = lenA + lenB;
     ObjString* sumstr = allocateString(length);
-
+    sumstr->hash = hashString(sumstr->chars, length);
     int i = 0;
 
     for (; i < lenA; i++) {
@@ -43,9 +55,9 @@ ObjString* sumString(char* a, char* b, int lenA, int lenB) {
 }
 
 ObjString* copyString(const char* chars, int length) {
-
     ObjString* string = allocateString(length);
     string->length = length;
+    string->hash = hashString(chars, length);
 
     for (int i = 0; i < length; i++) {
         string->chars[i] = chars[i];

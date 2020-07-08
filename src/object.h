@@ -24,6 +24,7 @@ struct sObj {
 struct sObjString {
     Obj obj;
     int length;
+    uint32_t hash;
     // using flexible array members to store the string in-place in the struct
     char chars[];
 };
