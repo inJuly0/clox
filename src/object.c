@@ -36,7 +36,6 @@ static uint32_t hashString(const char* key, int length) {
 ObjString* sumString(char* a, char* b, int lenA, int lenB) {
     int length = lenA + lenB;
     ObjString* sumstr = allocateString(length);
-    sumstr->hash = hashString(sumstr->chars, length);
     int i = 0;
 
     for (; i < lenA; i++) {
@@ -48,6 +47,7 @@ ObjString* sumString(char* a, char* b, int lenA, int lenB) {
     }
     sumstr->chars[i] = '\0';
     sumstr->length = length;
+    sumstr->hash = hashString(sumstr->chars, length);
     return sumstr;
 }
 
