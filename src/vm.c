@@ -17,7 +17,10 @@ static Value pop() { return popValue(&vm.stack); }
 
 static Value peek(size_t distance) { return vm.stack.top[-1 - distance]; }
 
-void printStack() { printValueStack(&vm.stack); }
+void printStack() {
+    printValueStack(&vm.stack);
+    printf(" (%d)\n\n", vm.stack.top - vm.stack.values);
+}
 
 static void runTimeError(const char* format, ...) {
     va_list args;
@@ -51,8 +54,9 @@ static bool isFalsey(Value value) {
 
 static void concatenate() {
     ObjString* b = AS_STRING(pop());
-    ObjString* a = AS_STRING(pop());  
-    ObjString* result = sumString(&a->chars[0], &b->chars[0], a->length, b->length);
+    ObjString* a = AS_STRING(pop());
+    ObjString* result =
+        sumString(&a->chars[0], &b->chars[0], a->length, b->length);
     push(OBJ_VAL(result));
 }
 
@@ -157,7 +161,7 @@ static InterpretResult run() {
 InterpretResult interpret(const char* source) {
     Chunk chunk;
     initChunk(&chunk);
-    
+
     // the compiler puts all the bytecode
     // into the chunk's opcode array
 

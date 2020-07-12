@@ -77,6 +77,7 @@ void pushValue(ValueStack* stack, Value value) {
         int oldSize = stack->size;
         stack->size = GROW_CAPACITY(stack->size);
         stack->values = GROW_ARRAY(stack->values, Value, oldSize, stack->size);
+        stack->top = stack->values + oldSize;
     }
     *(stack->top) = value;
     stack->top++;
@@ -92,10 +93,9 @@ void initValueStack(ValueStack* stack, size_t size) {
 }
 
 void freeValueStack(ValueStack* stack) {
-    stack->values = NULL;
+    free(stack->values);
     stack->top = NULL;
     stack->size = 0;
-    free(stack);
 }
 
 void printValueStack(ValueStack* stack) {
@@ -105,5 +105,4 @@ void printValueStack(ValueStack* stack) {
         printValue(*slot);
         printf("]");
     }
-    printf("\n");
 }

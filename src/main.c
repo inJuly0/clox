@@ -25,7 +25,6 @@ void vmTest() {
     printf("\n<VM tests>\n");
     initVM();
     interpret("\"str\" + \"ing\" + \" in lox !\"");
-    //
     freeVM();
     printf("\n</VM tests>\n");
 }
@@ -87,5 +86,6 @@ static void runLox(int argc, char const* argv[]) {
 int main(int argc, char const* argv[]) {
     // runLox(argc, argv);
     vmTest();
+    scanf("%c");
     return 0;
 }

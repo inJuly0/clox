@@ -15,7 +15,6 @@ static Obj* allocateObject(size_t size, ObjType type) {
     return object;
 }
 
-
 static ObjString* allocateString(int length) {
     // size of an ObjString + number of characters + one extra
     // for null terminator
@@ -23,18 +22,16 @@ static ObjString* allocateString(int length) {
     return (ObjString*)allocateObject(size, OBJ_STRING);
 }
 
+static uint32_t hashString(const char* key, int length) {
+    uint32_t hash = 2166136261u;
 
-static uint32_t hashString(char* key, int length) {
-  uint32_t hash = 2166136261u;
+    for (int i = 0; i < length; i++) {
+        hash ^= key[i];
+        hash *= 16777619;
+    }
 
-  for (int i = 0; i < length; i++) {
-    hash ^= key[i];
-    hash *= 16777619;
-  }
-
-  return hash;
+    return hash;
 }
-
 
 ObjString* sumString(char* a, char* b, int lenA, int lenB) {
     int length = lenA + lenB;
