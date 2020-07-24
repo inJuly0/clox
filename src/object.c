@@ -4,9 +4,9 @@
 #include <string.h>
 
 #include "memory.h"
+#include "table.h"
 #include "value.h"
 #include "vm.h"
-#include "table.h"
 
 static Obj* allocateObject(size_t size, ObjType type) {
     Obj* object = (Obj*)reallocate(NULL, 0, size);
@@ -38,7 +38,8 @@ static uint32_t hashString(const char* key, int length) {
 
 ObjString* sumString(char* a, char* b, int lenA, int lenB) {
     int length = lenA + lenB;
-    ObjString* sumstr = allocateString(length);
+    int size = sizeof(ObjString) + sizeof(char) * (length + 1);
+    ObjString* sumstr = (ObjString*)allocateObject(size, OBJ_STRING);
     int i = 0;
 
     for (; i < lenA; i++) {
@@ -51,15 +52,16 @@ ObjString* sumString(char* a, char* b, int lenA, int lenB) {
     sumstr->chars[i] = '\0';
     sumstr->length = length;
     sumstr->hash = hashString(sumstr->chars, length);
-    
     ObjString* interned = tableFindString(&vm.strings, sumstr->chars,
                                           sumstr->length, sumstr->hash);
-    printf(" XXX %d XXX", interned == NULL);
-    if (interned != NULL) {
-        FREE_ARRAY(sumstr->chars, char, length + 1);
-        return interned;
+
+    if (interned == NULL) {
+        tableSet(&vm.strings, sumstr, NIL_VAL);
+        return sumstr;
     }
-    return sumstr;
+
+    FREE_ARRAY(sumstr->chars, char, length);
+    return interned;
 }
 
 ObjString* copyString(const char* chars, int length) {
