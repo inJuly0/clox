@@ -10,6 +10,7 @@
 #include "memory.h"
 #include "object.h"
 #include "value.h"
+#include "table.h"
 
 static void push(Value val) { pushValue(&vm.stack, val); }
 
@@ -38,11 +39,13 @@ static void runTimeError(const char* format, ...) {
 
 void initVM() {
     initValueStack(&vm.stack, STACK_SIZE);
+    initTable(&vm.strings);
     vm.objects = NULL;
 }
 
 void freeVM() {
     freeValueStack(&vm.stack);
+    freeTable(&vm.strings);
     freeObjects();
 }
 
@@ -175,7 +178,6 @@ InterpretResult interpret(const char* source) {
     // then pass the chunk over to
     // the VM to interpret and run the
     // bytecode
-
     vm.chunk = &chunk;
     vm.ip = chunk.code;
 

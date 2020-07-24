@@ -1,4 +1,5 @@
-#pragma once
+#ifndef clox_table_h
+#define clox_table_h
 #include "common.h"
 #include "value.h"
 
@@ -19,3 +20,7 @@ bool tableSet(Table* table, ObjString* key, Value value);
 bool tableGet(Table* table, ObjString* key, Value* valueOut);
 bool tableDelete(Table* table, ObjString* key);
 void tableAddAll(Table* from, Table* to);
+ObjString* tableFindString(Table* table, const char chars[], int length,
+                           uint32_t hash);
+
+#endif

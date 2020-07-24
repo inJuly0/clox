@@ -22,10 +22,17 @@ void freeTable(Table* table) {
 
 static Entry* findEntry(Entry* entries, int cap, ObjString* key) {
     uint32_t index = key->hash % cap;
+    Entry* tombstone = NULL;
     while (true) {
         Entry* entry = &entries[index];
 
-        if (entry->key == key || entry->key == NULL) {
+        if (entry->key == NULL) {
+            if (IS_NIL(entry->value)) {
+                return tombstone != NULL ? tombstone : entry;
+            } else {
+                if (tombstone == NULL) tombstone = entry;
+            }
+        } else if (entry->key == key) {
             return entry;
         }
 
@@ -72,14 +79,14 @@ bool tableSet(Table* table, ObjString* key, Value value) {
     Entry* entry = findEntry(table->entries, table->cap, key);
 
     bool isNewKey = entry->key == NULL;
-    if (isNewKey) table->count++;
+    if (isNewKey && IS_NIL(entry->value)) table->count++;
 
     entry->key = key;
     entry->value = value;
     return isNewKey;
 }
 
-bool tableDelete(Table* table, ObjString* key, Value value) {
+bool tableDelete(Table* table, ObjString* key) {
     if (table->count == 0) return false;
 
     Entry* entry = findEntry(table->entries, table->cap, key);
@@ -97,5 +104,28 @@ void tableAddAll(Table* from, Table* to) {
         if (entry->key != NULL) {
             tableSet(to, entry->key, entry->value);
         }
+    }
+}
+
+// TODO: squash a bug hiding in this function
+ObjString* tableFindString(Table* table, const char chars[], int length,
+                           uint32_t hash) {
+    if (table->count == 0) return NULL;
+
+    uint32_t index = hash % table->cap;
+
+    for (;;) {
+        Entry* entry = &table->entries[index];
+
+        if (entry->key == NULL) {
+            // Stop if we find an empty non-tombstone entry.
+            if (IS_NIL(entry->value)) return NULL;
+        } else if (entry->key->length == length && entry->key->hash == hash &&
+                   memcmp(entry->key->chars, chars, length) == 0) {
+            // We found it.
+            return entry->key;
+        }
+
+        index = (index + 1) % table->cap;
     }
 }

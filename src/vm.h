@@ -3,6 +3,7 @@
 
 #include "chunk.h"
 #include "value.h"
+#include "table.h"
 
 // initial stack size
 // grows further dynamically as values are added
@@ -15,6 +16,7 @@ typedef struct {
     Chunk* chunk;
     uint8_t* ip;
     ValueStack stack;
+    Table strings;
     Obj* objects;
 } VM;
 
