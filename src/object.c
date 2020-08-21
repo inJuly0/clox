@@ -16,13 +16,11 @@ static Obj* allocateObject(size_t size, ObjType type) {
     return object;
 }
 
-static ObjString* allocateString(int length) {
-    // size of an ObjString + number of characters + one extra
-    // for null terminator
-    int size = sizeof(ObjString) + sizeof(char) * (length + 1);
-    ObjString* string = (ObjString*)allocateObject(size, OBJ_STRING);
-    tableSet(&vm.strings, string, NIL_VAL);
-    return string;
+// allocate an object without storing it to the VM's object link lists
+static Obj* xallocateObject(size_t size, ObjType type) {
+    Obj* object = (Obj*)reallocate(NULL, 0, size);
+    object->type = type;
+    return object;
 }
 
 static uint32_t hashString(const char* key, int length) {
@@ -36,48 +34,83 @@ static uint32_t hashString(const char* key, int length) {
     return hash;
 }
 
-ObjString* sumString(char* a, char* b, int lenA, int lenB) {
-    int length = lenA + lenB;
+static ObjString* allocateString(char* chars, int length) {
+    // size of an ObjString + number of characters + one extra
+    // for null terminator
     int size = sizeof(ObjString) + sizeof(char) * (length + 1);
-    ObjString* sumstr = (ObjString*)allocateObject(size, OBJ_STRING);
-    int i = 0;
-
-    for (; i < lenA; i++) {
-        sumstr->chars[i] = a[i];
+    ObjString* string = (ObjString*)allocateObject(size, OBJ_STRING);
+    for (int i = 0; chars[i]; i++) {
+        string->chars[i] = chars[i];
     }
+    string->length = length;
+    string->chars[length] = '\0';
+    string->hash = hashString(string->chars, length);
+    return string;
+}
 
-    for (; i < length; i++) {
-        sumstr->chars[i] = b[i - lenA];
+static void writeToString(ObjString* string, const char* chars) {
+    for (int i = 0; i < string->length; i++) {
+        string->chars[i] = chars[i];
     }
-    sumstr->chars[i] = '\0';
-    sumstr->length = length;
-    sumstr->hash = hashString(sumstr->chars, length);
-    ObjString* interned = tableFindString(&vm.strings, sumstr->chars,
-                                          sumstr->length, sumstr->hash);
+    string->chars[string->length] = '\0';
+    string->hash = hashString(string->chars, string->length);
+}
 
-    if (interned == NULL) {
-        tableSet(&vm.strings, sumstr, NIL_VAL);
-        return sumstr;
+static void storeString(ObjString* string) {
+    tableSet(&vm.strings, string, NIL_VAL);
+    ((Obj*)string)->next = vm.objects;
+    vm.objects = (Obj*)string;
+}
+
+// creates a string object without initializing the character array,
+// doesn't check for interning and
+// doesn't store it in the VM's object linked list
+ObjString* xallocateString(int length) {
+    int size = sizeof(ObjString) + sizeof(char) * (length + 1);
+    ObjString* string = (ObjString*)xallocateObject(size, OBJ_STRING);
+    string->length = length;
+    string->chars[length] = '\0';
+    return string;
+}
+
+// if the string is interned, assigns the string pointer
+// to the interned string freeing it's original contents,
+// else adds it as a new string to the intern table, and threads
+// it in the VM's object list for GC.
+void validateString(ObjString* string) {
+    // 1. if the string is interned, return
+    ObjString* interned = tableFindString(&vm.strings, string->chars,
+                                          string->length, string->hash);
+    if (interned != NULL) {
+        // TODO: free the original string's memory
+        string = interned;
     }
+    storeString(string);
+}
 
-    FREE_ARRAY(sumstr->chars, char, length);
-    return interned;
+ObjString* takeString(char* chars, int length) {
+    return allocateString(chars, length);
 }
 
 ObjString* copyString(const char* chars, int length) {
-    ObjString* string = allocateString(length);
-    string->length = length;
-    string->hash = hashString(chars, length);
+    // first creats an empty strings
+    // then write the characters from the "chars" buffer
+    // to the string's character array.
+    // if a similar interned string is found, then free the string made
+    // and return  the interned string instead.
+    ObjString* temp = xallocateString(length);
+    writeToString(temp, chars);
     ObjString* interned =
-        tableFindString(&vm.strings, chars, length, string->hash);
-    if (interned != NULL) return interned;
+        tableFindString(&vm.strings, temp->chars, length, temp->hash);
 
-    for (int i = 0; i < length; i++) {
-        string->chars[i] = chars[i];
+    if (interned != NULL) {
+        
+        // TODO free string
+        free(temp);
+        return interned;
     }
-
-    string->chars[length] = '\0';
-    return string;
+    tableSet(&vm.strings, temp, NIL_VAL);
+    return temp;
 }
 
 void printObject(Value value) {

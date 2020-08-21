@@ -36,7 +36,11 @@ typedef enum {
     OP_MULT,
     OP_DIV,
     OP_ADD,
-    OP_SUB
+    OP_SUB,
+    OP_PRINT,
+    OP_POP,
+    OP_DEFINE_GLOBAL,
+    OP_GET_GLOBAL
 } OpCode;
 
 typedef struct {
@@ -51,6 +55,5 @@ void initChunk(Chunk* chunk);
 void freeChunk(Chunk* chunk);
 void writeChunk(Chunk* chunk, uint8_t code, int line);
 int addConstant(Chunk* chunk, Value constant);
-Chunk* newChunk();
 
 #endif

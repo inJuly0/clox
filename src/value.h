@@ -6,16 +6,11 @@
 typedef struct sObj Obj;
 typedef struct sObjString ObjString;
 
-typedef enum{
-    VAL_BOOL,
-    VAL_NIL,
-    VAL_NUMBER,
-    VAL_OBJ
-}ValueType;
+typedef enum { VAL_BOOL, VAL_NIL, VAL_NUMBER, VAL_OBJ } ValueType;
 
-typedef struct{
+typedef struct {
     ValueType type;
-    union{
+    union {
         bool boolean;
         double number;
         Obj* obj;
@@ -26,7 +21,7 @@ typedef struct{
 #define BOOL_VAL(value) ((Value){VAL_BOOL, {.boolean = value}})
 #define NIL_VAL ((Value){VAL_NIL, {.number = 0}})
 #define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = value}})
-#define OBJ_VAL(object)   ((Value){ VAL_OBJ, { .obj = (Obj*)object } })
+#define OBJ_VAL(object) ((Value){VAL_OBJ, {.obj = (Obj*)object}})
 
 #define AS_BOOL(value) ((value).as.boolean)
 #define AS_NUMBER(value) ((value).as.number)
@@ -37,7 +32,6 @@ typedef struct{
 #define IS_NUMBER(value) ((value).type == VAL_NUMBER)
 #define IS_OBJ(value) ((value).type == VAL_OBJ)
 
-
 bool valuesEqual(Value a, Value b);
 
 // value array
@@ -47,7 +41,6 @@ typedef struct {
     int count;
     Value* values;
 } ValueArray;
-
 
 void initValueArray(ValueArray* array);
 ValueArray* newValueArray();
@@ -61,14 +54,12 @@ typedef struct {
     Value* top;
     size_t size;
     Value* values;
-}ValueStack;
-
+} ValueStack;
 
 void initValueStack(ValueStack* stack, size_t size);
 void freeValueStack(ValueStack* stack);
 Value popValue(ValueStack* stack);
 void pushValue(ValueStack* stack, Value value);
 void printValueStack(ValueStack* stack);
-
 
 #endif

@@ -9,8 +9,8 @@
 #include "debug.h"
 #include "memory.h"
 #include "object.h"
-#include "value.h"
 #include "table.h"
+#include "value.h"
 
 static void push(Value val) { pushValue(&vm.stack, val); }
 
@@ -40,12 +40,14 @@ static void runTimeError(const char* format, ...) {
 void initVM() {
     initValueStack(&vm.stack, STACK_SIZE);
     initTable(&vm.strings);
+    initTable(&vm.globals);
     vm.objects = NULL;
 }
 
 void freeVM() {
     freeValueStack(&vm.stack);
     freeTable(&vm.strings);
+    freeTable(&vm.globals);
     freeObjects();
 }
 
@@ -58,8 +60,18 @@ static bool isFalsey(Value value) {
 static void concatenate() {
     ObjString* b = AS_STRING(pop());
     ObjString* a = AS_STRING(pop());
-    ObjString* result =
-        sumString(&a->chars[0], &b->chars[0], a->length, b->length);
+    int len = b->length + a->length;
+    ObjString* result = xallocateString(len);
+
+    for (int i = 0; i < a->length; i++) {
+        result->chars[i] = a->chars[i];
+    }
+
+    for (int i = 0; i< b->length; i++) {
+        result->chars[a->length + i] = b->chars[i];
+    }
+
+    validateString(result);
     push(OBJ_VAL(result));
 }
 
@@ -80,6 +92,7 @@ static InterpretResult run() {
 // executed.
 #define READ_BYTE() (*(vm.ip++))
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_STRING() (AS_STRING(READ_CONSTANT()))
     while (true) {
 #ifdef DEBUG_TRACE_EXECTUION
         printStack();
@@ -89,8 +102,8 @@ static InterpretResult run() {
         Value valA, valB;
         switch (instruction) {
             case OP_RETURN:
-                printValue(pop());
-                printf("\n");
+                // printValue(pop());
+                printf("<returned>\n");
                 return INTERPRET_OK;
             case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
@@ -153,11 +166,37 @@ static InterpretResult run() {
             case OP_NOT:
                 push(BOOL_VAL(isFalsey(pop())));
                 break;
+            case OP_PRINT:
+                printValue(pop());
+                printf("\n");
+                break;
+            case OP_POP:
+                pop();
+                break;
+            case OP_DEFINE_GLOBAL: {
+                // something something garbage collection
+                ObjString* name = READ_STRING();
+                tableSet(&vm.globals, name, peek(0));
+                pop();
+                break;
+            }
+
+            case OP_GET_GLOBAL: {
+                ObjString* name = READ_STRING();
+                Value value;
+                if (!tableGet(&vm.globals, name, &value)) {
+                    runTimeError("Undefined global '%s'.", name->chars);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                push(value);
+                break;
+            }
         }
     }
 
 #undef READ_CONSTANT
 #undef READ_BYTE
+#undef READ_STRING
 #undef BINARY_OP
 }
 

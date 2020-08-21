@@ -16,7 +16,7 @@ void initTable(Table* table) {
 }
 
 void freeTable(Table* table) {
-    free(table->entries);
+    FREE_ARRAY(table->entries, Entry, table->cap);
     initTable(table);
 }
 
@@ -71,7 +71,7 @@ bool tableGet(Table* table, ObjString* key, Value* valueOut) {
 }
 
 bool tableSet(Table* table, ObjString* key, Value value) {
-    if (table->count + 1 > table->cap) {
+    if (table->count + 1 > table->cap * TABLE_MAX_LOAD) {
         int cap = GROW_CAPACITY(table->cap);
         adjustCapacity(table, cap);
     }
@@ -107,7 +107,7 @@ void tableAddAll(Table* from, Table* to) {
     }
 }
 
-// TODO: squash a bug hiding in this function
+
 ObjString* tableFindString(Table* table, const char chars[], int length,
                            uint32_t hash) {
     if (table->count == 0) return NULL;

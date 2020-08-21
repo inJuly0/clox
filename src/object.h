@@ -29,11 +29,10 @@ struct sObjString {
     char chars[];
 };
 
-// ObjString* takeString(char* chars, int length);
-/* takes two character buffers and returns a string object
- whose characters are the concactenated buffers*/
-ObjString* sumString(char* a, char* b, int lenA, int lenB);
+ObjString* takeString(char* chars, int length);
 ObjString* copyString(const char* chars, int length);
+ObjString* xallocateString(int length);
+void validateString(ObjString* string);
 void printObject(Value object);
 
 static inline bool isObjType(Value value, ObjType type) {
