@@ -24,7 +24,7 @@ void chunkTest() {
 void vmTest() {
     printf("\n<VM tests>\n");
     initVM();
-    interpret("var a = 1; var a = 2; print a * a;");
+    interpret("var a = \"aaa\"; print a + a + a;");
     freeVM();
     printf("\n</VM tests>\n");
 }

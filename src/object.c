@@ -16,7 +16,7 @@ static Obj* allocateObject(size_t size, ObjType type) {
     return object;
 }
 
-// allocate an object without storing it to the VM's object link lists
+// allocate an object without storing it to the VM's object linked list
 static Obj* xallocateObject(size_t size, ObjType type) {
     Obj* object = (Obj*)reallocate(NULL, 0, size);
     object->type = type;
@@ -73,19 +73,22 @@ ObjString* xallocateString(int length) {
     return string;
 }
 
-// if the string is interned, assigns the string pointer
-// to the interned string freeing it's original contents,
-// else adds it as a new string to the intern table, and threads
+// if the string is interned, assigns the ObjString pointer
+// to the interned string, freeing it's original contents.
+// Else adds it as a new string to the intern table, and threads
 // it in the VM's object list for GC.
-void validateString(ObjString* string) {
+ObjString* validateString(ObjString* string) {
     // 1. if the string is interned, return
     ObjString* interned = tableFindString(&vm.strings, string->chars,
                                           string->length, string->hash);
     if (interned != NULL) {
-        // TODO: free the original string's memory
-        string = interned;
+        // TODO: free the parameter string from memory
+        return interned;
     }
+    // if not interned, add it to the head of VM's
+    // object linked list and add it to the intern table.
     storeString(string);
+    return string;
 }
 
 ObjString* takeString(char* chars, int length) {
@@ -93,23 +96,14 @@ ObjString* takeString(char* chars, int length) {
 }
 
 ObjString* copyString(const char* chars, int length) {
-    // first creats an empty strings
+    // first create an empty string
     // then write the characters from the "chars" buffer
     // to the string's character array.
     // if a similar interned string is found, then free the string made
     // and return  the interned string instead.
     ObjString* temp = xallocateString(length);
     writeToString(temp, chars);
-    ObjString* interned =
-        tableFindString(&vm.strings, temp->chars, length, temp->hash);
-
-    if (interned != NULL) {
-        
-        // TODO free string
-        free(temp);
-        return interned;
-    }
-    tableSet(&vm.strings, temp, NIL_VAL);
+    temp = validateString(temp);
     return temp;
 }
 

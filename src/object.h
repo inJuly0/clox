@@ -32,7 +32,7 @@ struct sObjString {
 ObjString* takeString(char* chars, int length);
 ObjString* copyString(const char* chars, int length);
 ObjString* xallocateString(int length);
-void validateString(ObjString* string);
+ObjString* validateString(ObjString* string);
 void printObject(Value object);
 
 static inline bool isObjType(Value value, ObjType type) {

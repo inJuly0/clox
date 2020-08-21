@@ -1,9 +1,11 @@
 CC = gcc
 CFLAGS = 
+SRC_FILES = memory.c value.c table.c object.c chunk.c debug.c scanner.c compiler.c vm.c main.c
 BUILD_DIR = ../build/clox.exe
 
 all:
-	$(CC) $(CFLAGS) memory.c value.c table.c object.c chunk.c debug.c scanner.c compiler.c vm.c main.c -o $(BUILD_DIR).
+	$(CC) $(CFLAGS) $(SRC_FILES) -o $(BUILD_DIR).
+
 
 exec:
 	./bin/clox

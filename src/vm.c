@@ -67,11 +67,11 @@ static void concatenate() {
         result->chars[i] = a->chars[i];
     }
 
-    for (int i = 0; i< b->length; i++) {
+    for (int i = 0; i < b->length; i++) {
         result->chars[a->length + i] = b->chars[i];
     }
 
-    validateString(result);
+    result = validateString(result);
     push(OBJ_VAL(result));
 }
 
@@ -174,7 +174,7 @@ static InterpretResult run() {
                 pop();
                 break;
             case OP_DEFINE_GLOBAL: {
-                // something something garbage collection
+                // peek becausesomething something garbage collection
                 ObjString* name = READ_STRING();
                 tableSet(&vm.globals, name, peek(0));
                 pop();
@@ -189,6 +189,21 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 push(value);
+                break;
+            }
+
+            case OP_SET_GLOBAL: {
+                ObjString* name = READ_STRING();
+                // if the hash table doesn't already have a string
+                // going by that name then it creates a new key
+                // and then retruns true (isNewKey). Then we know
+                // that the global wasn't already defined and throw an
+                // error
+                if (tableSet(&vm.globals, name, peek(0))) {
+                    tableDelete(&vm.globals, name);
+                    runTimeError("Undefined variable '%s'.", name->chars);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
                 break;
             }
         }
