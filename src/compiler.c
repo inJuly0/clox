@@ -75,7 +75,7 @@ static void errorAtCurrent(const char* message) {
     errorAt(&parser.current, message);
 }
 
-static Token advance() {
+static void advance() {
     parser.previous = parser.current;
     // the while loop helps
     // skip the error tokens
@@ -213,8 +213,6 @@ ParseRule rules[] = {
 };
 
 static ParseRule* getRule(TokenType type) {
-    // wonder why it returns a pointer to the
-    // the rule instead of return rules[type]
     return &rules[type];
 }
 
@@ -357,9 +355,8 @@ static void synchronize() {
             case TOKEN_RETURN:
                 return;
 
-            default:
+            default:;
                 // Do nothing.
-                ;
         }
 
         advance();

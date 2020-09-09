@@ -20,7 +20,7 @@ static Value peek(size_t distance) { return vm.stack.top[-1 - distance]; }
 
 void printStack() {
     printValueStack(&vm.stack);
-    printf(" (%d)\n\n", vm.stack.top - vm.stack.values);
+    printf(" (%d)\n\n", (int)(vm.stack.top - vm.stack.values));
 }
 
 static void runTimeError(const char* format, ...) {

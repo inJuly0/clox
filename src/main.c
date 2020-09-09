@@ -29,9 +29,6 @@ void vmTest() {
     printf("\n</VM tests>\n");
 }
 
-void compilerTest() {
-    // compile("var anum = -1 * 2 or false\0");
-}
 
 static void repl() {
     char line[1024];
@@ -41,8 +38,9 @@ static void repl() {
 }
 
 static char* readFile(const char* filePath) {
-    FILE* file = fopen(filePath, "r");
-
+    FILE* file;
+    errno_t err = fopen_s(&file, filePath, "r");
+    
     if (!file) {
         fprintf(stderr, "Could not open file \'%s\'\n", filePath);
         exit(EXIT_FAILURE);
@@ -60,14 +58,18 @@ static char* readFile(const char* filePath) {
     }
 
     if (bytesRead < fileSize) {
-        fprintf(stderr, "Couldn't read file \'%s\'.\n");
+        fprintf(stderr, "Couldn't read file \'%s\'.\n", filePath);
     }
 
     buffer[bytesRead] = '\0';
     return buffer;
 }
 
-static void runFile(const char* filePath) {}
+static void runFile(const char* filePath) {
+    char* sourceCode = readFile(filePath);
+    printf("running lox interpreter on filename: %s", filePath);
+    interpret(sourceCode);
+}
 
 static void runLox(int argc, char const* argv[]) {
     initVM();
@@ -80,12 +82,12 @@ static void runLox(int argc, char const* argv[]) {
     } else {
         fprintf(stderr, "Usage: clox [path].\n");
     }
+
     freeVM();
 }
 
 int main(int argc, char const* argv[]) {
-    // runLox(argc, argv);
-    vmTest();
-    scanf("%c");
+    runLox(argc, argv);
+    //vmTest();
     return 0;
 }

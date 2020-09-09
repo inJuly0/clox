@@ -39,9 +39,11 @@ static ObjString* allocateString(char* chars, int length) {
     // for null terminator
     int size = sizeof(ObjString) + sizeof(char) * (length + 1);
     ObjString* string = (ObjString*)allocateObject(size, OBJ_STRING);
+    
     for (int i = 0; chars[i]; i++) {
         string->chars[i] = chars[i];
     }
+    
     string->length = length;
     string->chars[length] = '\0';
     string->hash = hashString(string->chars, length);
