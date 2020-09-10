@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "memory.h"
 #include "table.h"
@@ -85,6 +86,7 @@ ObjString* validateString(ObjString* string) {
                                           string->length, string->hash);
     if (interned != NULL) {
         // TODO: free the parameter string from memory
+        free(string);
         return interned;
     }
     // if not interned, add it to the head of VM's

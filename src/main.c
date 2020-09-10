@@ -38,7 +38,7 @@ static void repl() {
 }
 
 static char* readFile(const char* filePath) {
-    FILE* file;
+    FILE* file; 
     errno_t err = fopen_s(&file, filePath, "r");
     
     if (!file) {
@@ -53,7 +53,7 @@ static char* readFile(const char* filePath) {
     size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
 
     if (buffer == NULL) {
-        fprintf(stderr, "Not enough memory to read \'%s\'", filePath);
+        fprintf(stderr, "Not enough memory to read \'%s\'.\n", filePath);
         exit(EXIT_FAILURE);
     }
 
@@ -67,7 +67,7 @@ static char* readFile(const char* filePath) {
 
 static void runFile(const char* filePath) {
     char* sourceCode = readFile(filePath);
-    printf("running lox interpreter on filename: %s", filePath);
+    printf("running lox interpreter on file: '%s'\n", filePath);
     interpret(sourceCode);
 }
 
