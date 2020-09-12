@@ -124,10 +124,35 @@ static void emitBytes(uint8_t byte1, uint8_t byte2) {
 
 static void emitReturn() { emitByte(OP_RETURN); }
 
+static int emitJump(uint8_t instruction) {
+    emitByte(instruction);
+    // two place holder byte sized instructions
+    // that will be later strung together
+    // to make a short instruction. (16 bits)
+
+    emitByte(0xff);
+    emitByte(0xff);
+    // returns index of first byte
+    // of the jump address.
+    return currentChunk()->count - 2;
+}
+
+static void patchJump(int offset) {
+    int jump = currentChunk()->count - offset - 2;
+
+    if (jump > UINT16_MAX) {
+        error("Too much code to jump over.");
+    }
+
+    currentChunk()->code[offset] = (jump >> 8) & 0xff;
+    currentChunk()->code[offset + 1] = jump & 0xff;
+}
+
 static uint8_t makeConstant(Value value) {
     // addConstant returns the index in the pool to which
     // the constant was added.
     int constantIndex = addConstant(currentChunk(), value);
+
     if (constantIndex > UINT8_MAX) {
         error("Too many constants in one chunk.");
         return 0;
@@ -190,6 +215,8 @@ static bool match(TokenType type) {
 // actual parsing functions and some forward declarations
 
 static void binary(bool canAssign);
+static void and (bool canAssign);
+static void or (bool canAssign);
 static void unary(bool canAssign);
 static void literal(bool canAssign);
 static void number(bool canAssign);
@@ -199,6 +226,7 @@ static void namedVariable(Token name, bool canAssign);
 static void grouping(bool canAssign);
 static void expression();
 static void declaration();
+static void ifStatement();
 static void statement();
 static void printStatement();
 static void expressionStatement();
@@ -230,7 +258,7 @@ ParseRule rules[] = {
     {variable, NULL, PREC_NONE},      // TOKEN_IDENTIFIER
     {string, NULL, PREC_NONE},        // TOKEN_STRING
     {number, NULL, PREC_NONE},        // TOKEN_NUMBER
-    {NULL, NULL, PREC_NONE},          // TOKEN_AND
+    {NULL, and, PREC_AND},            // TOKEN_AND
     {NULL, NULL, PREC_NONE},          // TOKEN_CLASS
     {NULL, NULL, PREC_NONE},          // TOKEN_ELSE
     {literal, NULL, PREC_NONE},       // TOKEN_FALSE
@@ -238,7 +266,7 @@ ParseRule rules[] = {
     {NULL, NULL, PREC_NONE},          // TOKEN_FUN
     {NULL, NULL, PREC_NONE},          // TOKEN_IF
     {literal, NULL, PREC_NONE},       // TOKEN_NIL
-    {NULL, NULL, PREC_NONE},          // TOKEN_OR
+    {NULL, or, PREC_OR},              // TOKEN_OR
     {NULL, NULL, PREC_NONE},          // TOKEN_PRINT
     {NULL, NULL, PREC_NONE},          // TOKEN_RETURN
     {NULL, NULL, PREC_NONE},          // TOKEN_SUPER
@@ -287,6 +315,7 @@ static bool identifiersEqual(Token* a, Token* b) {
 static int resolveLocal(Compiler* compiler, Token* name) {
     for (int i = compiler->localCount - 1; i >= 0; i--) {
         Local* local = &compiler->locals[i];
+
         if (identifiersEqual(name, &local->name)) {
             if (local->depth == -1) {
                 error("Cannot read local variable in it's own initializer.");
@@ -344,6 +373,28 @@ static void defineVariable(uint8_t global) {
         return;
     }
     emitBytes(OP_DEFINE_GLOBAL, global);
+}
+
+static void and (bool canAssign) {
+    // left operand has already been compiled
+    // and is at the top of the VM's stack
+    // at this time. so we jump to the
+    // right hand operand if it's false.
+    int lJump = emitJump(OP_JUMPZ);
+    emitByte(OP_POP);           // pop left operand, since it's falsy
+    parsePrecedence(PREC_AND);  // op-codes for the right operand
+    patchJump(lJump);
+}
+
+static void or (bool canAssign) {
+    int elseJump = emitJump(OP_JUMPZ);
+    int endJump = emitJump(OP_JUMP);
+
+    patchJump(elseJump);
+    emitByte(OP_POP);
+
+    parsePrecedence(PREC_OR);
+    patchJump(endJump);
 }
 
 static void string(bool canAssign) {
@@ -438,6 +489,8 @@ static void statement() {
         beginScope();
         block();
         endScope();
+    } else if (match(TOKEN_IF)) {
+        ifStatement();
     } else {
         expressionStatement();
     }
@@ -453,6 +506,29 @@ static void expressionStatement() {
     expression();
     consume(TOKEN_SEMICOLON, "expected ';' after expression");
     emitByte(OP_POP);
+}
+
+static void ifStatement() {
+    consume(TOKEN_LEFT_PAREN, "Expected '(' after 'if'");
+
+    // compile the condition.
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expected ')' after if condition.");
+
+    int thenJump = emitJump(OP_JUMPZ);
+
+    // if the condition was true, pop it off the stack and run
+    // the statement body.
+    emitByte(OP_POP);
+    statement();
+
+    int elseJump = emitJump(OP_JUMP);
+
+    patchJump(thenJump);
+    emitByte(OP_POP);
+
+    if (match(TOKEN_ELSE)) statement();
+    patchJump(elseJump);
 }
 
 static void synchronize() {
@@ -573,22 +649,4 @@ bool compile(const char* source, Chunk* chunk) {
 
     endCompiler();
     return !parser.hadError;
-}
-
-void printTokens(const char* source) {
-    initScanner(source);
-    int line = -1;
-    for (;;) {
-        Token token = scanToken();
-        if (token.line != line) {
-            printf("%4d ", token.line);
-            line = token.line;
-        } else {
-            printf("   | ");
-        }
-        printf("%s '%.*s'\n", tokenToString(token.type), token.length,
-               token.start);
-
-        if (token.type == TOKEN_EOF) break;
-    }
 }
