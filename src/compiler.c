@@ -148,6 +148,16 @@ static void patchJump(int offset) {
     currentChunk()->code[offset + 1] = jump & 0xff;
 }
 
+static void emitLoop(int distance) {
+    emitByte(OP_LOOP);
+
+    int offset = currentChunk()->count - distance + 2;
+    if (offset > UINT16_MAX) error("Loop body too large.");
+
+    emitByte((offset >> 8) & 0xff);
+    emitByte(offset & 0xff);
+}
+
 static uint8_t makeConstant(Value value) {
     // addConstant returns the index in the pool to which
     // the constant was added.
@@ -529,6 +539,21 @@ static void ifStatement() {
 
     if (match(TOKEN_ELSE)) statement();
     patchJump(elseJump);
+}
+
+static void whileStatement() {
+    int loopStart = currentChunk()->count;
+
+    consume(TOKEN_LEFT_PAREN, "Expected '(' after 'while'.");
+    expression();
+    consume(TOKEN_LEFT_PAREN, "Expected ')' after condition.");
+
+    int exitJump = emitJump(OP_JUMPZ);
+    emitByte(OP_POP);
+    statement();
+    emitLoop(loopStart);
+    
+    patchJump(exitJump);
 }
 
 static void synchronize() {

@@ -1,2 +1,2 @@
-if (false) print 142;
-else print "HAHAAHAH";
+var a = 1;
+a = 2;

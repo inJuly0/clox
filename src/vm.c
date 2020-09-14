@@ -174,10 +174,11 @@ static InterpretResult run() {
             case OP_POP:
                 pop();
                 break;
-            case OP_POPN:
+            case OP_POPN: {
                 uint8_t count = READ_BYTE();
                 while (count--) pop();
                 break;
+            }
             case OP_DEFINE_GLOBAL: {
                 // peek becausesomething something garbage collection
                 ObjString* name = READ_STRING();
