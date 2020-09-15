@@ -19,7 +19,7 @@ static Value pop() { return popValue(&vm.stack); }
 static Value peek(size_t distance) { return vm.stack.top[-1 - distance]; }
 
 void printStack() {
-    printValueStack(&vm.stack);
+    // printValueStack(&vm.stack);
     printf(" (%d)\n\n", (int)(vm.stack.top - vm.stack.values));
 }
 
@@ -168,7 +168,7 @@ static InterpretResult run() {
                 push(BOOL_VAL(isFalsey(pop())));
                 break;
             case OP_PRINT:
-                printValue(pop());
+                printValue(peek(0));
                 printf("\n");
                 break;
             case OP_POP:
@@ -234,6 +234,12 @@ static InterpretResult run() {
             case OP_JUMP: {
                 uint16_t offset = READ_SHORT();
                 vm.ip += offset;
+                break;
+            }
+
+            case OP_LOOP: {
+                uint16_t offset = READ_SHORT();
+                vm.ip -= offset;
                 break;
             }
         }

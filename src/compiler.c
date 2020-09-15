@@ -148,10 +148,10 @@ static void patchJump(int offset) {
     currentChunk()->code[offset + 1] = jump & 0xff;
 }
 
-static void emitLoop(int distance) {
+static void emitLoop(int loopStart) {
     emitByte(OP_LOOP);
 
-    int offset = currentChunk()->count - distance + 2;
+    int offset = currentChunk()->count - loopStart + 2;
     if (offset > UINT16_MAX) error("Loop body too large.");
 
     emitByte((offset >> 8) & 0xff);
@@ -237,6 +237,7 @@ static void grouping(bool canAssign);
 static void expression();
 static void declaration();
 static void ifStatement();
+static void whileStatement();
 static void statement();
 static void printStatement();
 static void expressionStatement();
@@ -420,6 +421,7 @@ static void namedVariable(Token name, bool canAssign) {
         getOp = OP_GET_LOCAL;
         setOp = OP_SET_LOCAL;
     } else {
+        arg = identifierConstant(&name);
         getOp = OP_GET_GLOBAL;
         setOp = OP_SET_GLOBAL;
     }
@@ -463,7 +465,7 @@ static void literal(bool canAssign) {
 static void expression() { parsePrecedence(PREC_ASSIGN); }
 
 static void block() {
-    while (!check(TOKEN_LEFT_BRACE) && !check(TOKEN_EOF)) {
+    while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
         declaration();
     }
 
@@ -501,6 +503,8 @@ static void statement() {
         endScope();
     } else if (match(TOKEN_IF)) {
         ifStatement();
+    } else if (match(TOKEN_WHILE)) {
+        whileStatement();
     } else {
         expressionStatement();
     }
@@ -546,7 +550,7 @@ static void whileStatement() {
 
     consume(TOKEN_LEFT_PAREN, "Expected '(' after 'while'.");
     expression();
-    consume(TOKEN_LEFT_PAREN, "Expected ')' after condition.");
+    consume(TOKEN_RIGHT_PAREN, "Expected ')' after condition.");
 
     int exitJump = emitJump(OP_JUMPZ);
     emitByte(OP_POP);
@@ -554,6 +558,7 @@ static void whileStatement() {
     emitLoop(loopStart);
     
     patchJump(exitJump);
+    emitByte(OP_POP);
 }
 
 static void synchronize() {
