@@ -238,6 +238,7 @@ static void expression();
 static void declaration();
 static void ifStatement();
 static void whileStatement();
+static void forStatement();
 static void statement();
 static void printStatement();
 static void expressionStatement();
@@ -320,14 +321,14 @@ static uint8_t identifierConstant(Token* name) {
 
 static bool identifiersEqual(Token* a, Token* b) {
     if (a->length != b->length) return false;
-    return memcmp(a->start, b->start, a->length);
+    return memcmp(a->start, b->start, a->length) == 0;
 }
 
 static int resolveLocal(Compiler* compiler, Token* name) {
     for (int i = compiler->localCount - 1; i >= 0; i--) {
         Local* local = &compiler->locals[i];
 
-        if (identifiersEqual(name, &local->name)) {
+        if (identifiersEqual(name, &(local->name))) {
             if (local->depth == -1) {
                 error("Cannot read local variable in it's own initializer.");
             }
@@ -383,6 +384,7 @@ static void defineVariable(uint8_t global) {
         markInitialized();
         return;
     }
+
     emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
@@ -505,6 +507,8 @@ static void statement() {
         ifStatement();
     } else if (match(TOKEN_WHILE)) {
         whileStatement();
+    } else if (match(TOKEN_FOR)) {
+        forStatement();
     } else {
         expressionStatement();
     }
@@ -556,9 +560,56 @@ static void whileStatement() {
     emitByte(OP_POP);
     statement();
     emitLoop(loopStart);
-    
+
     patchJump(exitJump);
     emitByte(OP_POP);
+}
+
+static void forStatement() {
+    beginScope();
+    consume(TOKEN_LEFT_PAREN, "Expected '(' after for.");
+
+    if (match(TOKEN_SEMICOLON)) {
+        // no initializer.
+    } else if (match(TOKEN_VAR)) {
+        varDeclaration();
+    } else {
+        expressionStatement();
+    }
+
+    int loopStart = currentChunk()->count;
+    int exitJmp = -1;
+
+    if (!match(TOKEN_SEMICOLON)) {
+        expression();
+        consume(TOKEN_SEMICOLON, "Expected ';'");
+        exitJmp = emitJump(OP_JUMPZ);
+        emitByte(OP_POP);
+    }
+
+    // increment.
+
+    if (!match(TOKEN_RIGHT_PAREN)) {
+        int bodyJmp = emitJump(OP_JUMP);
+        int incrStart = currentChunk()->count;
+        expression();
+        consume(TOKEN_RIGHT_PAREN, "Expected ')' after for-loop clause.");
+
+        emitByte(OP_POP);
+
+        emitLoop(loopStart);
+        loopStart = incrStart;
+        patchJump(bodyJmp);
+    }
+
+    statement();
+    emitLoop(loopStart);
+    endScope();
+
+    if (exitJmp != -1) {
+        patchJump(exitJmp);
+        emitByte(OP_POP);  // pop the condition off the stack.
+    }
 }
 
 static void synchronize() {

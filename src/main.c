@@ -31,7 +31,7 @@ void vmTest() {
 
 
 static void repl() {
-    char line[1024];
+    // char line[1024];
     while (true) {
         break;
     }
@@ -39,7 +39,7 @@ static void repl() {
 
 static char* readFile(const char* filePath) {
     FILE* file; 
-    errno_t err = fopen_s(&file, filePath, "r");
+    fopen_s(&file, filePath, "r");
     
     if (!file) {
         fprintf(stderr, "Could not open file \'%s\'\n", filePath);
