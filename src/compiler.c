@@ -25,7 +25,12 @@ typedef struct {
     int depth;
 } Local;
 
+typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
+
+
 typedef struct {
+    ObjFunction* function;
+    FunctionType type;
     Local locals[UINT8_MAX + 1];
     int localCount;
     int scopeDepth;
@@ -111,7 +116,7 @@ static void consume(TokenType type, const char* message) {
     errorAtCurrent(message);
 }
 
-static Chunk* currentChunk() { return compilingChunk; }
+static Chunk* currentChunk() { return &current->function->chunk; }
 
 static void emitByte(uint8_t byte) {
     writeChunk(currentChunk(), byte, parser.previous.line);
@@ -177,19 +182,32 @@ static void emitConstant(Value value) {
     emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
-static void initCompiler(Compiler* compiler) {
+static void initCompiler(Compiler* compiler, FunctionType type) {
+    compiler->function = NULL;
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
+    compiler->type = type;
+    compiler->function = newFunction();
     current = compiler;
+
+    Local* local = &current->locals[current->localCount++];
+    local->depth = 0;
+    local->name.start = "";
+    local->name.length = 0;
 }
 
-static void endCompiler() {
+static ObjFunction* endCompiler() {
     emitReturn();
+    ObjFunction* func = current->function;
+
 #ifdef DEBUG_PRINT_CODE
     if (!parser.hadError) {
-        disassembleChunk(currentChunk(), "code");
+        disassembleChunk(currentChunk(), 
+            func->name != NULL ? func->name->chars : "<script>");
     }
 #endif
+
+    return func;
 }
 
 static void beginScope() { current->scopeDepth++; }
@@ -708,11 +726,10 @@ static void grouping(bool canAssign) {
     consume(TOKEN_RIGHT_PAREN, "Expected ')' after expression.");
 }
 
-bool compile(const char* source, Chunk* chunk) {
+ObjFunction* compile(const char* source) {
     initScanner(source);
     Compiler compiler;
-    initCompiler(&compiler);
-    compilingChunk = chunk;
+    initCompiler(&compiler, TYPE_SCRIPT);
     // initially both parser.current and parser.previous
     // are set to nothing. calling it for the first time
     // sets the current token to the first token in the
@@ -728,6 +745,6 @@ bool compile(const char* source, Chunk* chunk) {
         declaration();
     }
 
-    endCompiler();
-    return !parser.hadError;
+    ObjFunction* function = endCompiler();
+    return parser.hadError ? NULL : function;
 }

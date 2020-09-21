@@ -111,10 +111,31 @@ ObjString* copyString(const char* chars, int length) {
     return temp;
 }
 
+
+ObjFunction* newFunction() {
+    ObjFunction* func = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
+    func->arity = 0;
+    func->name = NULL;
+    initChunk(&func->chunk);
+    return func;
+}
+
+static void printFunction(ObjFunction* func) {
+    if (func->name == NULL) {
+        printf("<script>");
+        return;
+    }
+
+    printf("<function %s>", func->name->chars);
+}
+
 void printObject(Value value) {
     switch (OBJ_TYPE(value)) {
         case OBJ_STRING:
             printf("%s", AS_CSTRING(value));
+            break;
+        case OBJ_FUNCTION:
+            printFunction(AS_FUNCTION(value));
             break;
     }
 }

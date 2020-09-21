@@ -1,3 +1,7 @@
-for (var i = 0; i < 5; i = i + 1) {
-    print "hello from for loop !";
+{
+    var a = 1;
+    print a;
+    var b = 2;
+    a = 5;
+    print a;
 }

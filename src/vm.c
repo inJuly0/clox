@@ -30,8 +30,10 @@ static void runTimeError(const char* format, ...) {
     va_end(args);
     fputs("\n", stderr);
 
-    size_t instruction = vm.ip - vm.chunk->code - 1;
-    int line = vm.chunk->lines[instruction];
+    CallFrame* frame = &vm.frames[vm.frameCount - 1];
+    size_t instruction = frame->ip - frame->function->chunk.code - 1;
+    int line = frame->function->chunk.lines[instruction];
+
     fprintf(stderr, "[line %d] in script", line);
 
     initValueStack(&vm.stack, STACK_SIZE);
@@ -42,6 +44,7 @@ void initVM() {
     initTable(&vm.strings);
     initTable(&vm.globals);
     vm.objects = NULL;
+    vm.frameCount = 0;
 }
 
 void freeVM() {
@@ -86,18 +89,23 @@ static InterpretResult run() {
         double a = AS_NUMBER(pop());                      \
         push(valueType(a op b));                          \
     } while (false)
-// vm.ip is a pointer of type
-// uint8_t (OpCode) that directly
-// references the next opcode to be
-// executed.
-#define READ_BYTE() (*(vm.ip++))
-#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+    // vm.ip is a pointer of type
+    // uint8_t (OpCode) that directly
+    // references the next opcode to be
+    // executed.
+
+    CallFrame* frame = &vm.frames[vm.frameCount - 1];
+
+#define READ_BYTE() (*(frame->ip++))
+#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
 #define READ_STRING() (AS_STRING(READ_CONSTANT()))
-#define READ_SHORT() (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | (vm.ip[-1])))
+#define READ_SHORT() \
+    (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | (frame->ip[-1])))
     while (true) {
 #ifdef DEBUG_TRACE_EXECTUION
         printStack();
-        disassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
+        disassembleInstruction(&frame->function->chunk,
+                               (int)(frame->ip - frame->function->chunk.code));
 #endif
         uint8_t instruction = READ_BYTE();
         Value valA, valB;
@@ -168,7 +176,7 @@ static InterpretResult run() {
                 push(BOOL_VAL(isFalsey(pop())));
                 break;
             case OP_PRINT:
-                printValue(peek(0));
+                printValue(pop());
                 printf("\n");
                 break;
             case OP_POP:
@@ -215,31 +223,31 @@ static InterpretResult run() {
 
             case OP_GET_LOCAL: {
                 uint8_t slot = READ_BYTE();
-                push(vm.stack.values[slot]);
+                push(frame->slots[slot]);
                 break;
             }
 
             case OP_SET_LOCAL: {
                 uint8_t slot = READ_BYTE();
-                vm.stack.values[slot] = peek(0);
+                frame->slots[slot] = peek(0);
                 break;
             }
 
             case OP_JUMPZ: {
                 uint16_t offset = READ_SHORT();
-                if (isFalsey(peek(0))) vm.ip += offset;
+                if (isFalsey(peek(0))) frame->ip += offset;
                 break;
             }
 
             case OP_JUMP: {
                 uint16_t offset = READ_SHORT();
-                vm.ip += offset;
+                frame->ip += offset;
                 break;
             }
 
             case OP_LOOP: {
                 uint16_t offset = READ_SHORT();
-                vm.ip -= offset;
+                frame->ip -= offset;
                 break;
             }
         }
@@ -258,24 +266,19 @@ InterpretResult interpret(const char* source) {
 
     // the compiler puts all the bytecode
     // into the chunk's opcode array
+    ObjFunction* function = compile(source);
 
-    if (!compile(source, &chunk)) {
-        // throw error and return
-        freeChunk(&chunk);
-        return INTERPRET_COMPILE_ERROR;
-    }
+    if (function == NULL) return INTERPRET_COMPILE_ERROR;
 
     // if there are no compile errors
     // then pass the chunk over to
     // the VM to interpret and run the
     // bytecode
-    vm.chunk = &chunk;
-    vm.ip = chunk.code;
+    push(OBJ_VAL(function));
+    CallFrame* frame = &vm.frames[vm.frameCount++];
+    frame->function = function;
+    frame->ip = function->chunk.code;
+    frame->slots = vm.stack.values;
 
-    // we can't just do return run() because
-    // we have to free the chunk before exiting the function
-
-    InterpretResult result = run();
-    freeChunk(&chunk);
-    return result;
+    return run();
 }
