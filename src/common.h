@@ -6,6 +6,6 @@
 #include <stdint.h>
 
 #define DEBUG_PRINT_CODE
-#define DEBUG_TRACE_EXECTUION
+// #define DEBUG_TRACE_EXECTUION
 
 #endif

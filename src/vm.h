@@ -28,8 +28,10 @@ typedef struct {
     int frameCount;
 
     ValueStack stack;
+    // Interned strings in the VM.
     Table strings;
     Obj* objects;
+    // global variables, ObjString* -> Value table
     Table globals;
 } VM;
 

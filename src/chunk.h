@@ -47,7 +47,8 @@ typedef enum {
     OP_GET_LOCAL,
     OP_JUMPZ,
     OP_JUMP,
-    OP_LOOP
+    OP_LOOP,
+    OP_CALL
 } OpCode;
 
 typedef struct {
