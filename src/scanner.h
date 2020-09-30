@@ -1,6 +1,7 @@
 #ifndef clox_scanner_h
 #define clox_scanner_h
 
+// clang-format off
 typedef enum{
   TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN,                
   TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE,                
@@ -25,18 +26,19 @@ typedef enum{
   TOKEN_ERROR,                                        
   TOKEN_EOF                       
 } TokenType;
+// clang-format on
 
-typedef struct{
-    TokenType type;
-    // The token holds a direct pointer to 
-    // the starting character in the source string
-    const char* start;
-    int length;
-    int line;
-}Token;
+typedef struct {
+  TokenType type;
+  // The token holds a direct pointer to
+  // the starting character in the source string
+  const char *start;
+  int length;
+  int line;
+} Token;
 
-void initScanner(const char* source);
-char* tokenToString();
+void initScanner(const char *source);
+char *tokenToString();
 Token scanToken();
 
 #endif

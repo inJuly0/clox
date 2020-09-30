@@ -23,45 +23,48 @@
 */
 
 typedef enum {
-    OP_RETURN,
-    OP_CONSTANT,
-    OP_NIL,
-    OP_NOT,
-    OP_TRUE,
-    OP_FALSE,
-    OP_EQUAL,
-    OP_LESS,
-    OP_GREATER,
-    OP_NEGATE,
-    OP_MULT,
-    OP_DIV,
-    OP_ADD,
-    OP_SUB,
-    OP_PRINT,
-    OP_POP,
-    OP_POPN,
-    OP_DEFINE_GLOBAL,
-    OP_GET_GLOBAL,
-    OP_SET_GLOBAL,
-    OP_SET_LOCAL,
-    OP_GET_LOCAL,
-    OP_JUMPZ,
-    OP_JUMP,
-    OP_LOOP,
-    OP_CALL
+  OP_RETURN,
+  OP_CONSTANT,
+  OP_NIL,
+  OP_NOT,
+  OP_TRUE,
+  OP_FALSE,
+  OP_EQUAL,
+  OP_LESS,
+  OP_GREATER,
+  OP_NEGATE,
+  OP_MULT,
+  OP_DIV,
+  OP_ADD,
+  OP_SUB,
+  OP_PRINT,
+  OP_POP,
+  OP_POPN,
+  OP_DEFINE_GLOBAL,
+  OP_GET_GLOBAL,
+  OP_SET_GLOBAL,
+  OP_SET_LOCAL,
+  OP_GET_LOCAL,
+  OP_JUMPZ,
+  OP_JUMP,
+  OP_LOOP,
+  OP_CALL,
+  OP_CLOSURE,
+  OP_GET_UPVALUE,
+  OP_SET_UPVALUE
 } OpCode;
 
 typedef struct {
-    size_t count;
-    size_t capacity;
-    uint8_t* code;
-    ValueArray constants;
-    int* lines;
+  size_t count;
+  size_t capacity;
+  uint8_t *code;
+  ValueArray constants;
+  int *lines;
 } Chunk;
 
-void initChunk(Chunk* chunk);
-void freeChunk(Chunk* chunk);
-void writeChunk(Chunk* chunk, uint8_t code, int line);
-int addConstant(Chunk* chunk, Value constant);
+void initChunk(Chunk *chunk);
+void freeChunk(Chunk *chunk);
+void writeChunk(Chunk *chunk, uint8_t code, int line);
+int addConstant(Chunk *chunk, Value constant);
 
 #endif
