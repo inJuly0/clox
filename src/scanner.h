@@ -32,13 +32,13 @@ typedef struct {
   TokenType type;
   // The token holds a direct pointer to
   // the starting character in the source string
-  const char *start;
+  const char* start;
   int length;
   int line;
 } Token;
 
-void initScanner(const char *source);
-char *tokenToString();
+void initScanner(const char* source);
+char* tokenToString();
 Token scanToken();
 
 #endif

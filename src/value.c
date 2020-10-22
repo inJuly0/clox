@@ -46,13 +46,13 @@ void printValue(Value value) {
 
 // value array functions
 
-void initValueArray(ValueArray *array) {
+void initValueArray(ValueArray* array) {
   array->count = 0;
   array->capacity = 0;
   array->values = NULL;
 }
 
-void writeValueArray(ValueArray *array, Value value) {
+void writeValueArray(ValueArray* array, Value value) {
   if (array->count + 1 > array->capacity) {
     int oldCapacity = array->capacity;
     array->capacity = GROW_CAPACITY(array->capacity);
@@ -62,14 +62,14 @@ void writeValueArray(ValueArray *array, Value value) {
   array->values[array->count++] = value;
 }
 
-void freeValueArray(ValueArray *array) {
+void freeValueArray(ValueArray* array) {
   FREE_ARRAY(array->values, Value, array->count);
   initValueArray(array);
 }
 
 // Value stack functions
 
-void pushValue(ValueStack *stack, Value value) {
+void pushValue(ValueStack* stack, Value value) {
   if ((stack->top - stack->values) > stack->size) {
     int oldSize = stack->size;
     stack->size = GROW_CAPACITY(stack->size);
@@ -80,24 +80,24 @@ void pushValue(ValueStack *stack, Value value) {
   stack->top++;
 }
 
-Value popValue(ValueStack *stack) { return *(--stack->top); }
+Value popValue(ValueStack* stack) { return *(--stack->top); }
 
-void initValueStack(ValueStack *stack, size_t size) {
+void initValueStack(ValueStack* stack, size_t size) {
   stack->values = NULL;
   stack->values = GROW_ARRAY(stack->values, Value, 0, size);
   stack->size = size;
   stack->top = stack->values;
 }
 
-void freeValueStack(ValueStack *stack) {
+void freeValueStack(ValueStack* stack) {
   free(stack->values);
   stack->top = NULL;
   stack->size = 0;
 }
 
-void printValueStack(ValueStack *stack) {
+void printValueStack(ValueStack* stack) {
   printf("           ");
-  for (Value *slot = stack->values; slot < stack->top; slot++) {
+  for (Value* slot = stack->values; slot < stack->top; slot++) {
     printf("[");
     printValue(*slot);
     printf("]");

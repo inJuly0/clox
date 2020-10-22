@@ -36,8 +36,8 @@ static void repl() {
   }
 }
 
-static char *readFile(const char *filePath) {
-  FILE *file;
+static char* readFile(const char* filePath) {
+  FILE* file;
   fopen_s(&file, filePath, "r");
 
   if (!file) {
@@ -48,7 +48,7 @@ static char *readFile(const char *filePath) {
   fseek(file, 0, SEEK_END);
   size_t fileSize = ftell(file);
   rewind(file);
-  char *buffer = (char *)malloc(fileSize + 1);
+  char* buffer = (char*)malloc(fileSize + 1);
   size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
 
   if (buffer == NULL) {
@@ -64,13 +64,13 @@ static char *readFile(const char *filePath) {
   return buffer;
 }
 
-static void runFile(const char *filePath) {
-  char *sourceCode = readFile(filePath);
+static void runFile(const char* filePath) {
+  char* sourceCode = readFile(filePath);
   printf("running lox interpreter on file: '%s'\n", filePath);
   interpret(sourceCode);
 }
 
-static void runLox(int argc, char const *argv[]) {
+static void runLox(int argc, char const* argv[]) {
   initVM();
   printf("cLox | Crafting Interpreters (Bob Nystrom).\n");
 
@@ -85,7 +85,7 @@ static void runLox(int argc, char const *argv[]) {
   freeVM();
 }
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const* argv[]) {
   runLox(argc, argv);
   // vmTest();
   return 0;

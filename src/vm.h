@@ -6,18 +6,17 @@
 #include "table.h"
 #include "value.h"
 
-
 #define FRAMES_MAX 64
 // initial stack size
 // grows further dynamically as values are added
 #define STACK_SIZE 256
 
 typedef struct {
-  ObjClosure *closure;
-  uint8_t *ip;
+  ObjClosure* closure;
+  uint8_t* ip;
   // the first slot that this function
   // can use;
-  Value *slots;
+  Value* slots;
 } CallFrame;
 
 /* stackTop points to where the next element is
@@ -30,7 +29,7 @@ typedef struct {
   ValueStack stack;
   // Interned strings in the VM.
   Table strings;
-  Obj *objects;
+  Obj* objects;
   // global variables, ObjString* -> Value table
   Table globals;
 } VM;
@@ -45,6 +44,6 @@ VM vm;
 
 void initVM();
 void freeVM();
-InterpretResult interpret(const char *source);
+InterpretResult interpret(const char* source);
 
 #endif

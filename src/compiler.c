@@ -1,5 +1,6 @@
 #include "compiler.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,20 +26,34 @@ typedef struct {
   int depth;
 } Local;
 
+typedef struct {
+  uint8_t index;
+  bool isLocal;
+} Upvalue;
+
 typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
 
 typedef struct {
-  struct Compiler *enclosing;
-  ObjFunction *function;
+  // the compiler outside this one.
+  // is NULL for the global scoped one.
+  struct Compiler* enclosing;
+  // the current function it
+  // compiles the bytecode into
+  ObjFunction* function;
   FunctionType type;
+  // symbol table of local variables
   Local locals[UINT8_MAX + 1];
   int localCount;
+  // Upvalues captured in case this is a
+  // closure.
+  Upvalue upvalues[UINT8_MAX + 1];
+  int upvalueCount;
   int scopeDepth;
 } Compiler;
 
 Parser parser;
-Compiler *current = NULL;
-Chunk *compilingChunk;
+Compiler* current = NULL;
+Chunk* compilingChunk;
 
 // operator precedence
 
@@ -62,6 +77,8 @@ typedef enum {
 
 typedef void (*ParseFn)(bool canAssign);
 
+// A parse rule tells us the
+// function to call when encountering a token T
 typedef struct {
   ParseFn prefix;
   ParseFn infix;
@@ -70,7 +87,7 @@ typedef struct {
 
 // helper functions
 
-static void errorAt(Token *token, const char *message) {
+static void errorAt(Token* token, const char* message) {
   if (parser.panicMode)
     return;
   parser.panicMode = true;
@@ -88,9 +105,9 @@ static void errorAt(Token *token, const char *message) {
   parser.hadError = true;
 }
 
-static void error(const char *message) { errorAt(&parser.current, message); }
+static void error(const char* message) { errorAt(&parser.current, message); }
 
-static void errorAtCurrent(const char *message) {
+static void errorAtCurrent(const char* message) {
   errorAt(&parser.current, message);
 }
 
@@ -110,7 +127,7 @@ static void advance() {
   }
 }
 
-static void consume(TokenType type, const char *message) {
+static void consume(TokenType type, const char* message) {
   if (parser.current.type == type) {
     advance();
     return;
@@ -118,7 +135,7 @@ static void consume(TokenType type, const char *message) {
   errorAtCurrent(message);
 }
 
-static Chunk *currentChunk() { return &current->function->chunk; }
+static Chunk* currentChunk() { return &current->function->chunk; }
 
 static void emitByte(uint8_t byte) {
   writeChunk(currentChunk(), byte, parser.previous.line);
@@ -188,8 +205,8 @@ static void emitConstant(Value value) {
   emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
-static void initCompiler(Compiler *compiler, FunctionType type) {
-  compiler->enclosing = (struct Compiler *)current;
+static void initCompiler(Compiler* compiler, FunctionType type) {
+  compiler->enclosing = (struct Compiler*)current;
   compiler->function = NULL;
   compiler->localCount = 0;
   compiler->scopeDepth = 0;
@@ -202,15 +219,15 @@ static void initCompiler(Compiler *compiler, FunctionType type) {
         copyString(parser.previous.start, parser.previous.length);
   }
 
-  Local *local = &current->locals[current->localCount++];
+  Local* local = &current->locals[current->localCount++];
   local->depth = 0;
   local->name.start = "";
   local->name.length = 0;
 }
 
-static ObjFunction *endCompiler() {
+static ObjFunction* endCompiler() {
   emitReturn();
-  ObjFunction *func = current->function;
+  ObjFunction* func = current->function;
 
 #ifdef DEBUG_PRINT_CODE
   if (!parser.hadError) {
@@ -219,7 +236,7 @@ static ObjFunction *endCompiler() {
   }
 #endif
 
-  current = (Compiler *)current->enclosing;
+  current = (Compiler*)current->enclosing;
   return func;
 }
 
@@ -276,7 +293,7 @@ static void expressionStatement();
 static void varDeclaration();
 static void funDeclaration();
 static void synchronize();
-static ParseRule *getRule(TokenType type);
+static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
 ParseRule rules[] = {
@@ -322,7 +339,7 @@ ParseRule rules[] = {
     {NULL, NULL, PREC_NONE},         // TOKEN_EOF
 };
 
-static ParseRule *getRule(TokenType type) { return &rules[type]; }
+static ParseRule* getRule(TokenType type) { return &rules[type]; }
 
 static void parsePrecedence(Precedence precedence) {
   advance();
@@ -347,19 +364,43 @@ static void parsePrecedence(Precedence precedence) {
   }
 }
 
-static uint8_t identifierConstant(Token *name) {
+static uint8_t identifierConstant(Token* name) {
   return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
 }
 
-static bool identifiersEqual(Token *a, Token *b) {
+static bool identifiersEqual(Token* a, Token* b) {
   if (a->length != b->length)
     return false;
   return memcmp(a->start, b->start, a->length) == 0;
 }
 
-static int resolveLocal(Compiler *compiler, Token *name) {
+static int addUpvalue(Compiler* compiler, uint8_t index, bool isLocal) {
+  int count = compiler->function->upvalueCount;
+
+  // check if this upvalue already exists.
+  for (int i = 0; i < count; i++) {
+    Upvalue* upvalue = &compiler->upvalues[i];
+    if (upvalue->index == index && upvalue->isLocal == isLocal)
+      return i;
+  }
+
+  if (count >= UINT8_MAX) {
+    error("Too many upvalues in a function.");
+    return -1;
+  }
+
+  // if none found, then add this as a new upvalue to the last
+  // slot, bump the upvalue count by 1 and return.
+
+  compiler->upvalues[count].index = index;
+  compiler->upvalues[count].isLocal = isLocal;
+
+  return compiler->function->upvalueCount++;
+}
+
+static int resolveLocal(Compiler* compiler, Token* name) {
   for (int i = compiler->localCount - 1; i >= 0; i--) {
-    Local *local = &compiler->locals[i];
+    Local* local = &compiler->locals[i];
 
     if (identifiersEqual(name, &(local->name))) {
       if (local->depth == -1) {
@@ -372,13 +413,35 @@ static int resolveLocal(Compiler *compiler, Token *name) {
   return -1;
 }
 
+static int resolveUpvalue(Compiler* compiler, Token* name) {
+  Compiler* enclosing = (Compiler*)compiler->enclosing;
+  if (enclosing == NULL)
+    return -1;
+
+  int local = resolveLocal(enclosing, name);
+  bool isLocal = true;
+
+  if (local == -1) {
+    // if upvalue isn't found, look for an upvalue in the outer scope
+    // of the enclosing compiler
+    local = resolveUpvalue(enclosing, name);
+    // if no upvalue is found even in the chain of enclosing scopes
+    // exit.
+    if (local == -1)
+      return -1;
+    isLocal = false;
+  }
+
+  return addUpvalue(compiler, (uint8_t)local, isLocal);
+}
+
 static void addLocal(Token name) {
   if (current->localCount == UINT8_MAX + 1) {
     error("Too many local variables in function.\n");
     return;
   }
 
-  Local *local = &current->locals[current->localCount++];
+  Local* local = &current->locals[current->localCount++];
   local->name = name;
   local->depth = -1;
 }
@@ -388,10 +451,10 @@ static void declareVariable() {
   if (current->scopeDepth == 0)
     return;
 
-  Token *name = &parser.previous;
+  Token* name = &parser.previous;
 
   for (int i = current->localCount - 1; i >= 0; i--) {
-    Local *local = &current->locals[i];
+    Local* local = &current->locals[i];
     if (local->depth != -1 && local->depth < current->scopeDepth)
       break;
 
@@ -403,7 +466,7 @@ static void declareVariable() {
   addLocal(*name);
 }
 
-static uint8_t parseVariable(const char *errorMessage) {
+static uint8_t parseVariable(const char* errorMessage) {
   consume(TOKEN_IDENTIFIER, errorMessage);
   declareVariable();
   if (current->scopeDepth > 0)
@@ -460,6 +523,9 @@ static void namedVariable(Token name, bool canAssign) {
   if (arg != -1) {
     getOp = OP_GET_LOCAL;
     setOp = OP_SET_LOCAL;
+  } else if ((arg = resolveUpvalue(current, &name)) != -1) {
+    getOp = OP_GET_UPVALUE;
+    setOp = OP_SET_UPVALUE;
   } else {
     arg = identifierConstant(&name);
     getOp = OP_GET_GLOBAL;
@@ -510,7 +576,7 @@ static uint8_t parseArgs() {
     do {
       expression();
       argCount++;
-      if (argCount > 255) {
+      if (argCount >= UINT8_MAX) {
         error("Cannot have more than 255 arguments.");
       }
 
@@ -616,8 +682,13 @@ static void function(FunctionType type) {
   consume(TOKEN_LEFT_BRACE, "Expected '{' before function body.");
   block();
 
-  ObjFunction *function = endCompiler();
+  ObjFunction* function = endCompiler();
   emitBytes(OP_CLOSURE, makeConstant(OBJ_VAL(function)));
+
+  for (int i = 0; i < function->upvalueCount; i++) {
+    emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
+    emitByte(compiler.upvalues[i].index);
+  }
 }
 
 static void funDeclaration() {
@@ -755,7 +826,7 @@ static void binary(bool canAssign) {
   TokenType operator= parser.previous.type;
 
   //  Compile the right hand operand
-  ParseRule *rule = getRule(operator);
+  ParseRule* rule = getRule(operator);
   //  + 1 because binary operators like +, -, %, *
   //  assosciate to the left , so 1 + 2 + 3
   //  should be parsed as (1 + 2) + 3 instead of  1 + (2 + 3)
@@ -823,7 +894,7 @@ static void grouping(bool canAssign) {
   consume(TOKEN_RIGHT_PAREN, "Expected ')' after expression.");
 }
 
-ObjFunction *compile(const char *source) {
+ObjFunction* compile(const char* source) {
   initScanner(source);
   Compiler compiler;
   initCompiler(&compiler, TYPE_SCRIPT);
@@ -842,6 +913,6 @@ ObjFunction *compile(const char *source) {
     declaration();
   }
 
-  ObjFunction *function = endCompiler();
+  ObjFunction* function = endCompiler();
   return parser.hadError ? NULL : function;
 }

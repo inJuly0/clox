@@ -10,14 +10,14 @@
 // respective characters in the source string
 
 typedef struct {
-  const char *start;
-  const char *current;
+  const char* start;
+  const char* current;
   int line;
 } Scanner;
 
 Scanner scanner;
 
-void initScanner(const char *source) {
+void initScanner(const char* source) {
   scanner.start = source;
   scanner.current = source;
   scanner.line = 1;
@@ -35,7 +35,7 @@ Token makeToken(TokenType type) {
   return token;
 }
 
-Token errorToken(const char *errorMessage) {
+Token errorToken(const char* errorMessage) {
   Token token;
   token.type = TOKEN_ERROR;
   token.start = errorMessage;
@@ -136,7 +136,7 @@ static Token number() {
 // rest: the rest of the keyword to check with
 // type: the token type to return if the strings match
 
-static TokenType checkKeyword(int start, int length, const char *rest,
+static TokenType checkKeyword(int start, int length, const char* rest,
                               TokenType type) {
   if ((int)(scanner.current - scanner.start) != start + length)
     return TOKEN_IDENTIFIER;
@@ -254,7 +254,7 @@ Token scanToken() {
 }
 
 // for debugging.
-char *tokenToString(TokenType tok) {
+char* tokenToString(TokenType tok) {
   switch (tok) {
   case TOKEN_LEFT_PAREN:
     return "LEFT_PAREN";

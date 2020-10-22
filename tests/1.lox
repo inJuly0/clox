@@ -1,9 +1,12 @@
 var x = "global";
+print x;
 
 fun outer() {
   var x = "outer";
+  var z = "outer 2";
   fun inner() {
     print x;
+    print z;
   }
   inner();
 }

@@ -9,22 +9,22 @@
 
 #define TABLE_MAX_LOAD 0.75
 
-void initTable(Table *table) {
+void initTable(Table* table) {
   table->count = 0;
   table->cap = 0;
   table->entries = NULL;
 }
 
-void freeTable(Table *table) {
+void freeTable(Table* table) {
   FREE_ARRAY(table->entries, Entry, table->cap);
   initTable(table);
 }
 
-static Entry *findEntry(Entry *entries, int cap, ObjString *key) {
+static Entry* findEntry(Entry* entries, int cap, ObjString* key) {
   uint32_t index = key->hash % cap;
-  Entry *tombstone = NULL;
+  Entry* tombstone = NULL;
   while (true) {
-    Entry *entry = &entries[index];
+    Entry* entry = &entries[index];
 
     if (entry->key == NULL) {
       if (IS_NIL(entry->value)) {
@@ -41,19 +41,19 @@ static Entry *findEntry(Entry *entries, int cap, ObjString *key) {
   }
 }
 
-static void adjustCapacity(Table *table, int cap) {
-  Entry *entries = ALLOCATE(Entry, cap);
+static void adjustCapacity(Table* table, int cap) {
+  Entry* entries = ALLOCATE(Entry, cap);
   for (int i = 0; i < cap; i++) {
     entries[i].key = NULL;
     entries[i].value = NIL_VAL;
   }
 
   for (int i = 0; i < table->cap; i++) {
-    Entry *entry = &table->entries[i];
+    Entry* entry = &table->entries[i];
     if (entry->key == NULL)
       continue;
 
-    Entry *dest = findEntry(entries, cap, entry->key);
+    Entry* dest = findEntry(entries, cap, entry->key);
     dest->key = entry->key;
     dest->value = entry->value;
   }
@@ -63,10 +63,10 @@ static void adjustCapacity(Table *table, int cap) {
   table->cap = cap;
 }
 
-bool tableGet(Table *table, ObjString *key, Value *valueOut) {
+bool tableGet(Table* table, ObjString* key, Value* valueOut) {
   if (table->count == 0)
     return false;
-  Entry *entry = findEntry(table->entries, table->cap, key);
+  Entry* entry = findEntry(table->entries, table->cap, key);
   if (entry->key == NULL)
     return false;
 
@@ -74,13 +74,13 @@ bool tableGet(Table *table, ObjString *key, Value *valueOut) {
   return true;
 }
 
-bool tableSet(Table *table, ObjString *key, Value value) {
+bool tableSet(Table* table, ObjString* key, Value value) {
   if (table->count + 1 > table->cap * TABLE_MAX_LOAD) {
     int cap = GROW_CAPACITY(table->cap);
     adjustCapacity(table, cap);
   }
 
-  Entry *entry = findEntry(table->entries, table->cap, key);
+  Entry* entry = findEntry(table->entries, table->cap, key);
 
   bool isNewKey = entry->key == NULL;
   if (isNewKey && IS_NIL(entry->value))
@@ -91,11 +91,11 @@ bool tableSet(Table *table, ObjString *key, Value value) {
   return isNewKey;
 }
 
-bool tableDelete(Table *table, ObjString *key) {
+bool tableDelete(Table* table, ObjString* key) {
   if (table->count == 0)
     return false;
 
-  Entry *entry = findEntry(table->entries, table->cap, key);
+  Entry* entry = findEntry(table->entries, table->cap, key);
   if (entry->key == NULL)
     return false;
 
@@ -105,16 +105,16 @@ bool tableDelete(Table *table, ObjString *key) {
   return true;
 }
 
-void tableAddAll(Table *from, Table *to) {
+void tableAddAll(Table* from, Table* to) {
   for (int i = 0; i < from->cap; i++) {
-    Entry *entry = &from->entries[i];
+    Entry* entry = &from->entries[i];
     if (entry->key != NULL) {
       tableSet(to, entry->key, entry->value);
     }
   }
 }
 
-ObjString *tableFindString(Table *table, const char chars[], int length,
+ObjString* tableFindString(Table* table, const char chars[], int length,
                            uint32_t hash) {
   if (table->count == 0)
     return NULL;
@@ -122,7 +122,7 @@ ObjString *tableFindString(Table *table, const char chars[], int length,
   uint32_t index = hash % table->cap;
 
   for (;;) {
-    Entry *entry = &table->entries[index];
+    Entry* entry = &table->entries[index];
 
     if (entry->key == NULL) {
       // Stop if we find an empty non-tombstone entry.

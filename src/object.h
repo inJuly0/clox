@@ -12,32 +12,46 @@
 #define IS_NATIVE(value) isObjType(value, OBJ_NATIVE)
 #define IS_CLOSURE(value) isObjType(value, OBJ_CLOSURE)
 
-#define AS_FUNCTION(value) ((ObjFunction *)AS_OBJ(value))
-#define AS_STRING(value) ((ObjString *)AS_OBJ(value))
-#define AS_NATIVE(value) (((ObjNative *)AS_OBJ(value))->function)
-#define AS_CSTRING(value) (((ObjString *)AS_OBJ(value))->chars)
-#define AS_CLOSURE(value) ((ObjClosure *)AS_OBJ(value))
+#define AS_FUNCTION(value) ((ObjFunction*)AS_OBJ(value))
+#define AS_STRING(value) ((ObjString*)AS_OBJ(value))
+#define AS_NATIVE(value) (((ObjNative*)AS_OBJ(value))->function)
+#define AS_CSTRING(value) (((ObjString*)AS_OBJ(value))->chars)
+#define AS_CLOSURE(value) ((ObjClosure*)AS_OBJ(value))
 
-typedef enum { OBJ_STRING, OBJ_FUNCTION, OBJ_NATIVE, OBJ_CLOSURE } ObjType;
+typedef enum {
+  OBJ_STRING,
+  OBJ_FUNCTION,
+  OBJ_NATIVE,
+  OBJ_CLOSURE,
+  OBJ_UPVALUE
+} ObjType;
 
 struct sObj {
   ObjType type;
-  struct sObj *next;
+  struct sObj* next;
 };
 
 typedef struct {
   Obj obj;
   int arity;
   Chunk chunk;
-  ObjString *name;
+  int upvalueCount;
+  ObjString* name;
 } ObjFunction;
 
 typedef struct {
   Obj obj;
-  ObjFunction *function;
+  Value* slot;
+} ObjUpvalue;
+
+typedef struct {
+  Obj obj;
+  ObjFunction* function;
+  ObjUpvalue** upvalues;
+  int upvalueCount;
 } ObjClosure;
 
-typedef Value (*NativeFn)(int argCount, Value *args);
+typedef Value (*NativeFn)(int argCount, Value* args);
 
 typedef struct {
   Obj obj;
@@ -52,13 +66,14 @@ struct sObjString {
   char chars[];
 };
 
-ObjFunction *newFunction();
-ObjClosure *newClosure(ObjFunction *function);
-ObjNative *newNative(NativeFn function);
-ObjString *takeString(char *chars, int length);
-ObjString *copyString(const char *chars, int length);
-ObjString *xallocateString(int length);
-ObjString *validateString(ObjString *string);
+ObjFunction* newFunction();
+ObjClosure* newClosure(ObjFunction* function);
+ObjUpvalue* newUpvalue(Value* slot);
+ObjNative* newNative(NativeFn function);
+ObjString* takeString(char* chars, int length);
+ObjString* copyString(const char* chars, int length);
+ObjString* xallocateString(int length);
+ObjString* validateString(ObjString* string);
 void printObject(Value object);
 
 static inline bool isObjType(Value value, ObjType type) {

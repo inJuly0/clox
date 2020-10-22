@@ -4,14 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 #include "memory.h"
 #include "table.h"
 #include "value.h"
 #include "vm.h"
 
-static Obj *allocateObject(size_t size, ObjType type) {
-  Obj *object = (Obj *)reallocate(NULL, 0, size);
+static Obj* allocateObject(size_t size, ObjType type) {
+  Obj* object = (Obj*)reallocate(NULL, 0, size);
   object->type = type;
   object->next = vm.objects;
   vm.objects = object;
@@ -19,13 +18,13 @@ static Obj *allocateObject(size_t size, ObjType type) {
 }
 
 // allocate an object without storing it to the VM's object linked list
-static Obj *xallocateObject(size_t size, ObjType type) {
-  Obj *object = (Obj *)reallocate(NULL, 0, size);
+static Obj* xallocateObject(size_t size, ObjType type) {
+  Obj* object = (Obj*)reallocate(NULL, 0, size);
   object->type = type;
   return object;
 }
 
-static uint32_t hashString(const char *key, int length) {
+static uint32_t hashString(const char* key, int length) {
   uint32_t hash = 2166136261u;
 
   for (int i = 0; i < length; i++) {
@@ -36,11 +35,11 @@ static uint32_t hashString(const char *key, int length) {
   return hash;
 }
 
-static ObjString *allocateString(char *chars, int length) {
+static ObjString* allocateString(char* chars, int length) {
   // size of an ObjString + number of characters + one extra
   // for null terminator
   int size = sizeof(ObjString) + sizeof(char) * (length + 1);
-  ObjString *string = (ObjString *)allocateObject(size, OBJ_STRING);
+  ObjString* string = (ObjString*)allocateObject(size, OBJ_STRING);
 
   for (int i = 0; chars[i]; i++) {
     string->chars[i] = chars[i];
@@ -52,7 +51,7 @@ static ObjString *allocateString(char *chars, int length) {
   return string;
 }
 
-static void writeToString(ObjString *string, const char *chars) {
+static void writeToString(ObjString* string, const char* chars) {
   for (int i = 0; i < string->length; i++) {
     string->chars[i] = chars[i];
   }
@@ -60,18 +59,18 @@ static void writeToString(ObjString *string, const char *chars) {
   string->hash = hashString(string->chars, string->length);
 }
 
-static void storeString(ObjString *string) {
+static void storeString(ObjString* string) {
   tableSet(&vm.strings, string, NIL_VAL);
-  ((Obj *)string)->next = vm.objects;
-  vm.objects = (Obj *)string;
+  ((Obj*)string)->next = vm.objects;
+  vm.objects = (Obj*)string;
 }
 
 // creates a string object without initializing the character array,
 // doesn't check for interning and
 // doesn't store it in the VM's object linked list
-ObjString *xallocateString(int length) {
+ObjString* xallocateString(int length) {
   int size = sizeof(ObjString) + sizeof(char) * (length + 1);
-  ObjString *string = (ObjString *)xallocateObject(size, OBJ_STRING);
+  ObjString* string = (ObjString*)xallocateObject(size, OBJ_STRING);
   string->length = length;
   string->chars[length] = '\0';
   return string;
@@ -81,9 +80,9 @@ ObjString *xallocateString(int length) {
 // to the interned string, freeing it's original contents.
 // Else adds it as a new string to the intern table, and threads
 // it in the VM's object list for GC.
-ObjString *validateString(ObjString *string) {
+ObjString* validateString(ObjString* string) {
   // 1. if the string is interned, return
-  ObjString *interned =
+  ObjString* interned =
       tableFindString(&vm.strings, string->chars, string->length, string->hash);
   if (interned != NULL) {
     // TODO: free the parameter string from memory
@@ -96,43 +95,58 @@ ObjString *validateString(ObjString *string) {
   return string;
 }
 
-ObjString *takeString(char *chars, int length) {
+ObjString* takeString(char* chars, int length) {
   return allocateString(chars, length);
 }
 
-ObjString *copyString(const char *chars, int length) {
+ObjString* copyString(const char* chars, int length) {
   // first create an empty string
   // then write the characters from the "chars" buffer
   // to the string's character array.
   // if a similar interned string is found, then free the string made
   // and return  the interned string instead.
-  ObjString *temp = xallocateString(length);
+  ObjString* temp = xallocateString(length);
   writeToString(temp, chars);
   temp = validateString(temp);
   return temp;
 }
 
-ObjFunction *newFunction() {
-  ObjFunction *func = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
+ObjFunction* newFunction() {
+  ObjFunction* func = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
   func->arity = 0;
+  func->upvalueCount = 0;
   func->name = NULL;
   initChunk(&func->chunk);
   return func;
 }
 
-ObjNative *newNative(NativeFn function) {
-  ObjNative *native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
+ObjNative* newNative(NativeFn function) {
+  ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
   native->function = function;
   return native;
 }
 
-ObjClosure *newClosure(ObjFunction *func) {
-  ObjClosure *closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
+ObjClosure* newClosure(ObjFunction* func) {
+  ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
   closure->function = func;
+  ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, func->upvalueCount);
+  
+  for (int i = 0; i < func->upvalueCount; i++) {
+    upvalues[i] = NULL;
+  }
+
+  closure->upvalues = upvalues;
+  closure->upvalueCount = func->upvalueCount;
   return closure;
 }
 
-static void printFunction(ObjFunction *func) {
+ObjUpvalue* newUpvalue(Value* slot) {
+  ObjUpvalue* upval = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
+  upval->slot = slot;
+  return upval;
+}
+
+static void printFunction(ObjFunction* func) {
   if (func->name == NULL) {
     printf("<script>");
     return;
@@ -154,6 +168,9 @@ void printObject(Value value) {
     break;
   case OBJ_CLOSURE:
     printFunction(AS_CLOSURE(value)->function);
+    break;
+  case OBJ_UPVALUE:
+    printf("upvalue");
     break;
   }
 }

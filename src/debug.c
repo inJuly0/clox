@@ -1,22 +1,23 @@
 #include "debug.h"
 
+#include "object.h"
+#include "value.h"
 #include <stdio.h>
 
-#include "value.h"
 
-void disassembleChunk(Chunk *chunk, const char *name) {
+void disassembleChunk(Chunk* chunk, const char* name) {
   printf("== %s ==\n\n", name);
   for (int offset = 0; offset < chunk->count;) {
     offset = disassembleInstruction(chunk, offset);
   }
 }
 
-static int simpleInstruction(const char *name, int offset) {
+static int simpleInstruction(const char* name, int offset) {
   printf("%s\n", name);
   return offset + 1;
 }
 
-static int constantInstruction(const char *name, Chunk *chunk, int offset) {
+static int constantInstruction(const char* name, Chunk* chunk, int offset) {
   uint8_t index = chunk->code[offset + 1];
   Value constant = chunk->constants.values[index];
   printf("%-16s\t%4d '", name, index);
@@ -25,13 +26,13 @@ static int constantInstruction(const char *name, Chunk *chunk, int offset) {
   return offset + 2;
 }
 
-static int byteInstruction(const char *name, Chunk *chunk, int offset) {
+static int byteInstruction(const char* name, Chunk* chunk, int offset) {
   uint8_t slot = chunk->code[offset + 1];
   printf("%-16s\t%4d\n", name, slot);
   return offset + 2;
 }
 
-static int jumpInstruction(char *name, Chunk *chunk, int offset) {
+static int jumpInstruction(char* name, Chunk* chunk, int offset) {
   uint8_t low = chunk->code[offset + 1];
   uint8_t high = chunk->code[offset + 2];
 
@@ -40,7 +41,7 @@ static int jumpInstruction(char *name, Chunk *chunk, int offset) {
   return offset + 3;
 }
 
-int disassembleInstruction(Chunk *chunk, int offset) {
+int disassembleInstruction(Chunk* chunk, int offset) {
   printf("%04d\t", offset);
   if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1])
     printf("   | ");
@@ -103,12 +104,24 @@ int disassembleInstruction(Chunk *chunk, int offset) {
     return byteInstruction("OP_CALL", chunk, offset);
   case OP_CLOSURE: {
     offset++;
-    uint8_t constant = chunk->code[offset++];
-    printf("%-16s %4d ", "OP_CLOSURE", constant);
-    printValue(chunk->constants.values[constant]);
+    uint8_t index = chunk->code[offset++];
+    printf("%-16s %4d ", "OP_CLOSURE", index);
+    printValue(chunk->constants.values[index]);
     printf("\n");
+    ObjFunction* function = AS_FUNCTION(chunk->constants.values[index]);
+    for (int j = 0; j < function->upvalueCount; j++) {
+      int isLocal = chunk->code[offset++];
+      int index = chunk->code[offset++];
+      printf("%04d       |                     %s %d\n", offset - 2,
+             isLocal ? "local" : "upvalue", index);
+    }
+
     return offset;
   }
+  case OP_SET_UPVALUE:
+    return byteInstruction("OP_SET_UPVALUE", chunk, offset);
+  case OP_GET_UPVALUE:
+    return byteInstruction("OP_GET_UPVALUE", chunk, offset);
   default:
     printf("Unknown opcode.. %d\n", chunk->code[offset]);
     return offset + 1;

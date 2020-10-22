@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void printTokens(const char *source) {
+static void printTokens(const char* source) {
   initScanner(source);
   int line = -1;
   for (;;) {
@@ -21,8 +21,8 @@ static void printTokens(const char *source) {
   }
 }
 
-static char *readFile(const char *filePath) {
-  FILE *file;
+static char* readFile(const char* filePath) {
+  FILE* file;
   errno_t err = fopen_s(&file, filePath, "r");
 
   if (!file) {
@@ -33,7 +33,7 @@ static char *readFile(const char *filePath) {
   fseek(file, 0, SEEK_END);
   size_t fileSize = ftell(file);
   rewind(file);
-  char *buffer = (char *)malloc(fileSize + 1);
+  char* buffer = (char*)malloc(fileSize + 1);
   size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
 
   if (buffer == NULL) {
@@ -49,8 +49,8 @@ static char *readFile(const char *filePath) {
   return buffer;
 }
 
-int main(int argc, const char **argv) {
-  char *source = readFile("../tests/1.lox");
+int main(int argc, const char** argv) {
+  char* source = readFile("../tests/1.lox");
   printTokens(source);
   free(source);
   return 0;
