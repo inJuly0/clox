@@ -1,3 +1,17 @@
-var a = 1 + 2 * 3;
-print a;
-print a == 3;
+var globalSet;
+var globalGet;
+
+fun main() {
+  var a = "initial";
+
+  fun set() { a = "updated"; }
+  fun get() { print a; }
+
+  globalSet = set;
+  globalGet = get;
+}
+
+main();
+globalGet();
+globalSet();
+globalGet();

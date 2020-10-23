@@ -130,7 +130,7 @@ ObjClosure* newClosure(ObjFunction* func) {
   ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
   closure->function = func;
   ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, func->upvalueCount);
-  
+
   for (int i = 0; i < func->upvalueCount; i++) {
     upvalues[i] = NULL;
   }
@@ -143,6 +143,8 @@ ObjClosure* newClosure(ObjFunction* func) {
 ObjUpvalue* newUpvalue(Value* slot) {
   ObjUpvalue* upval = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
   upval->slot = slot;
+  upval->next = NULL;
+  upval->closed = NIL_VAL;
   return upval;
 }
 

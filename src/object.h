@@ -39,9 +39,11 @@ typedef struct {
   ObjString* name;
 } ObjFunction;
 
-typedef struct {
+typedef struct ObjUpvalue {
   Obj obj;
   Value* slot;
+  Value closed;
+  struct ObjUpvalue* next;
 } ObjUpvalue;
 
 typedef struct {

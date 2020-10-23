@@ -1,6 +1,7 @@
 #include "vm.h"
 
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -66,6 +67,7 @@ void initVM() {
   initTable(&vm.globals);
   vm.objects = NULL;
   vm.frameCount = 0;
+  vm.openUpvalues = NULL;
 
   defineNative("clock", clockNative);
 }
@@ -144,6 +146,40 @@ static bool callValue(Value callee, int argCount) {
   return false;
 }
 
+static ObjUpvalue* captureValue(Value* local) {
+  ObjUpvalue* prev = NULL;
+  ObjUpvalue* current = vm.openUpvalues;
+
+  while (current != NULL && current->slot > local) {
+    prev = current;
+    current = current->next;
+  }
+
+  if (current != NULL && current->slot == local) {
+    return current;
+  }
+
+  ObjUpvalue* createdUpvalue = newUpvalue(local);
+  createdUpvalue->next = current;
+
+  if (prev == NULL) {
+    vm.openUpvalues = createdUpvalue;
+  } else {
+    prev->next = createdUpvalue;
+  }
+
+  return createdUpvalue;
+}
+
+static void closeUpvalues(Value* last) {
+  while (vm.openUpvalues != NULL && vm.openUpvalues->slot >= last) {
+    ObjUpvalue* upval = vm.openUpvalues;
+    upval->closed = *upval->slot;
+    upval->slot = &upval->closed;
+    vm.openUpvalues = upval->next;
+  }
+}
+
 static InterpretResult run() {
 #define BINARY_OP(valueType, op)                                               \
   do {                                                                         \
@@ -174,8 +210,9 @@ static InterpretResult run() {
     uint8_t instruction = READ_BYTE();
     Value valA, valB;
     switch (instruction) {
-    case OP_RETURN:
+    case OP_RETURN: {
       Value result = pop();
+      closeUpvalues(frame->slots);
       vm.frameCount--;
 
       if (vm.frameCount == 0) {
@@ -188,6 +225,7 @@ static InterpretResult run() {
 
       frame = &vm.frames[vm.frameCount - 1];
       break;
+    }
     case OP_CONSTANT: {
       Value constant = READ_CONSTANT();
       push(constant);
@@ -307,6 +345,19 @@ static InterpretResult run() {
       break;
     }
 
+    case OP_GET_UPVALUE: {
+      uint8_t index = READ_BYTE();
+      ObjUpvalue* upval = frame->closure->upvalues[index];
+      push(*frame->closure->upvalues[index]->slot);
+      break;
+    }
+
+    case OP_SET_UPVALUE: {
+      uint8_t index = READ_BYTE();
+      *frame->closure->upvalues[index]->slot = peek(0);
+      break;
+    }
+
     case OP_JUMPZ: {
       uint16_t offset = READ_SHORT();
       if (isFalsey(peek(0)))
@@ -340,6 +391,22 @@ static InterpretResult run() {
       ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
       ObjClosure* closure = newClosure(function);
       push(OBJ_VAL(closure));
+
+      for (int i = 0; i < closure->upvalueCount; i++) {
+        uint8_t isLocal = READ_BYTE();
+        uint8_t index = READ_BYTE();
+        if (isLocal) {
+          closure->upvalues[i] = captureValue(frame->slots + index);
+        } else {
+          closure->upvalues[i] = frame->closure->upvalues[i];
+        }
+      }
+      break;
+    }
+
+    case OP_CLOSE_UPVALUE: {
+      closeUpvalues(vm.stack.top - 1);
+      pop();
       break;
     }
     }

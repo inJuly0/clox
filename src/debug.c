@@ -4,7 +4,6 @@
 #include "value.h"
 #include <stdio.h>
 
-
 void disassembleChunk(Chunk* chunk, const char* name) {
   printf("== %s ==\n\n", name);
   for (int offset = 0; offset < chunk->count;) {
@@ -112,7 +111,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
     for (int j = 0; j < function->upvalueCount; j++) {
       int isLocal = chunk->code[offset++];
       int index = chunk->code[offset++];
-      printf("%04d       |                     %s %d\n", offset - 2,
+      printf("%04d       |                       %s %d\n", offset - 2,
              isLocal ? "local" : "upvalue", index);
     }
 
@@ -122,6 +121,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
     return byteInstruction("OP_SET_UPVALUE", chunk, offset);
   case OP_GET_UPVALUE:
     return byteInstruction("OP_GET_UPVALUE", chunk, offset);
+  case OP_CLOSE_UPVALUE:
+    return simpleInstruction("OP_CLOSE_UPVALUE", offset);
   default:
     printf("Unknown opcode.. %d\n", chunk->code[offset]);
     return offset + 1;

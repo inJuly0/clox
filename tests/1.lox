@@ -1,14 +1,12 @@
-var x = "global";
-print x;
+var g = "global";
 
-fun outer() {
-  var x = "outer";
-  var z = "outer 2";
+fun foo() {
+  var u = "upvalue";
   fun inner() {
-    print x;
-    print z;
+    print g;
+    print u;
   }
   inner();
 }
 
-outer();
+foo();

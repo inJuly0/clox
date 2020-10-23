@@ -24,6 +24,7 @@ typedef struct {
 typedef struct {
   Token name;
   int depth;
+  bool isCaptured;
 } Local;
 
 typedef struct {
@@ -223,6 +224,7 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
   local->depth = 0;
   local->name.start = "";
   local->name.length = 0;
+  local->isCaptured = false;
 }
 
 static ObjFunction* endCompiler() {
@@ -248,14 +250,13 @@ static void endScope() {
 
   while (current->localCount > 0 &&
          current->locals[current->localCount - 1].depth > current->scopeDepth) {
-    popCount++;
+    if (current->locals[current->localCount - 1].isCaptured) {
+      emitByte(OP_CLOSE_UPVALUE);
+    } else {
+      emitByte(OP_POP);
+    }
     current->localCount--;
   }
-
-  if (popCount > 1)
-    emitBytes(OP_POPN, popCount);
-  else
-    emitByte(OP_POP);
 }
 
 static bool check(TokenType type) { return parser.current.type == type; }
@@ -431,7 +432,7 @@ static int resolveUpvalue(Compiler* compiler, Token* name) {
       return -1;
     isLocal = false;
   }
-
+  enclosing->locals[local].isCaptured = true;
   return addUpvalue(compiler, (uint8_t)local, isLocal);
 }
 
@@ -444,6 +445,7 @@ static void addLocal(Token name) {
   Local* local = &current->locals[current->localCount++];
   local->name = name;
   local->depth = -1;
+  local->isCaptured = false;
 }
 
 static void declareVariable() {
