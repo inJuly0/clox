@@ -6,5 +6,6 @@
 
 ObjFunction* compile(const char* source);
 void printTokens(const char* source);
+void markCompilerRoots();
 
 #endif

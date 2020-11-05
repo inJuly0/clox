@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -69,6 +70,10 @@ void initVM() {
   vm.frameCount = 0;
   vm.openUpvalues = NULL;
 
+  vm.grayCapacity = 0;
+  vm.grayCount = 0;
+  vm.grayStack = NULL;
+
   defineNative("clock", clockNative);
 }
 
@@ -77,6 +82,7 @@ void freeVM() {
   freeTable(&vm.strings);
   freeTable(&vm.globals);
   freeObjects();
+  free(vm.grayStack);
 }
 
 static bool isFalsey(Value value) {
@@ -154,7 +160,8 @@ static ObjUpvalue* captureValue(Value* local) {
     prev = current;
     current = current->next;
   }
-
+  // if the upvalue has already been captured, return
+  // it.
   if (current != NULL && current->slot == local) {
     return current;
   }
@@ -391,7 +398,6 @@ static InterpretResult run() {
       ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
       ObjClosure* closure = newClosure(function);
       push(OBJ_VAL(closure));
-
       for (int i = 0; i < closure->upvalueCount; i++) {
         uint8_t isLocal = READ_BYTE();
         uint8_t index = READ_BYTE();

@@ -4,7 +4,7 @@ var globalGet;
 fun main() {
   var a = "initial";
 
-  fun set() { a = "updated"; }
+  fun set(val) { a = val; }
   fun get() { print a; }
 
   globalSet = set;
@@ -13,5 +13,5 @@ fun main() {
 
 main();
 globalGet();
-globalSet();
+globalSet("booooo");
 globalGet();
